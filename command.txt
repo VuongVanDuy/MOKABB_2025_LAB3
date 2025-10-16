@@ -2,3 +2,6 @@ rm ~/.config/systemd/user/default.target.wants/payload-auto-restore.service
 rmdir ~/.config/systemd/user/default.target.wants
 rm ~/.config/systemd/user/payload-auto-restore.service
 systemctl --user status payload-auto-restore.service
+find ~ -type f -name 'payload' -print
+ps -aux | grep payload
+sudo tail -f /var/log/syslog | grep CRON

