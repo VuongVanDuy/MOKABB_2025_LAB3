@@ -53,18 +53,14 @@ PREFIX_DIR_PAYLOAD = ".tmp_"
 
 CRON_DIR = "~/.config/cron"
 
-BASH_SCRIPT_NAME = "cron-runner.sh"
+BASH_SCRIPT_NAME = "cron-runner"
 
-HELPER_SCRIPT_NAME = "help.sh"
+WRAPPER_SCRIPT_NAME = "firefox-with-companion"
 
-HELPER_DIR = "~/.local/share/.helper"
+WRAPPER_DIR = "~/.local/bin"
 
-WRAPPER_SCRIPT_NAME = "wrapper.sh"
+DESKTOP_NAME_OVERRIDE = "firefox.desktop"
 
-WRAPPER_DIR = "~/.local/share/.wrapper"
+DESKTOP_DIR_OVERRIDE = "/usr/share/applications"
 
-DESKTOP_SCRIPT_NAME = "open-with-helper-firefox.desktop"
-
-DESKTOP_DIR = "~/.local/share/applications/"
-
-FIREFOX_BIN = "/usr/bin/firefox"
+FIREFOX_BIN = "/usr/lib/firefox/firefox"

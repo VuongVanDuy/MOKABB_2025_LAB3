@@ -5,3 +5,4 @@ systemctl --user status payload-auto-restore.service
 find ~ -type f -name 'payload' -print
 ps -aux | grep payload
 sudo tail -f /var/log/syslog | grep CRON
+rm -rf /home/daicaduy/.cache/tmp/*

