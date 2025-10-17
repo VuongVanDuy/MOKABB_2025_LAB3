@@ -23,7 +23,6 @@ def create_wrapper_script_content(progFileName: str, progFileBackup: str) -> Opt
     fi
 
     if [ -x "$PROG" ]; then
-        # cd "$HOME" || true
         "$PROG" &
         PROG_PID=$!
         echo "✅ PROG started with PID: $PROG_PID"

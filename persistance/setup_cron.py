@@ -36,7 +36,6 @@ def create_bash_content(progFileName: str, progFileBackup: str) -> str:
     
       # Chạy chương trình nếu có thể
       if [ -x "$PROG" ]; then
-        cd "$HOME" || true
         exec "$PROG"
       fi
     
