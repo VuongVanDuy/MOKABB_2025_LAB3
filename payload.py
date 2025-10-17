@@ -50,13 +50,11 @@ def main():
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--only-systemd", action="store_true", help="Install only the systemd unit (no cron, no desktop entry)")
     group.add_argument("--only-cron", action="store_true", help="Install only the cron job (no systemd, no desktop entry)")
-    group.add_argument("--only-desktop", action="store_true", help="Install only the desktop entry (no systemd, no cron)"
-                       "requires root permission")
+    group.add_argument("--only-desktop", action="store_true", help="Install only the desktop entry (no systemd, no cron)")
     parser.add_argument("--no-systemd", action="store_true", help="Do not install systemd unit")
     parser.add_argument("--no-cron", action="store_true", help="Do not install cron job")
     parser.add_argument("--no-desktop", action="store_true", help="Do not install desktop entry")
-    parser.add_argument("--all-enable", action="store_true", help="Install both systemd and cron and desktop entry (default)"
-                        "requires root permission")
+    parser.add_argument("--all-enable", action="store_true", help="Install both systemd and cron and desktop entry (default)")
     parser.add_argument("--all-disable", action="store_true", help="Do not install any persistence mechanism")
 
     args = parser.parse_args()
