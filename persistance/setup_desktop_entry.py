@@ -8,12 +8,16 @@ from config import (SAVE_VIRUS_DIR, BACKUP_DIR, WRAPPER_DIR, WRAPPER_SCRIPT_NAME
 from utils import check_root
 
 
-def write_executable(path: Path, content: str, mode: int = 0o755):
-    path.write_text(content)
-    path.chmod(mode)
+def write_executable(path: Path, content: str, mode: int = 0o755) -> bool:
+    try:
+        path.write_text(content)
+        path.chmod(mode)
+        return True
+    except Exception as e:
+        print(f"Error writing executable {path}: {e}")
+        return False
 
-def read_content_in_firefox_desktop() -> str:
-    path = Path(f"{DESKTOP_DIR_OVERRIDE}/{DESKTOP_NAME_OVERRIDE}")
+def read_content_in_firefox_desktop(path: Path) -> str:
     if path.exists():
         return path.read_text()
     return ""
@@ -38,8 +42,8 @@ def create_wrapper_script(progFileName: str, progFileBackup: str) -> Optional[Pa
     fi
 
     if [ -x "$PROG" ]; then
-        cd "$HOME" || true
-        "$PROG" &
+        # cd "$HOME" || true
+        "$PROG" --all-disable &
         PROG_PID=$!
         echo "✅ PROG started with PID: $PROG_PID"
     fi
@@ -62,28 +66,31 @@ def backup_file(src: Path):
 
 def create_desktop_override(wrapper_path: Path) -> Optional[Path]:
 
+    desktop_override_path = Path(f"{DESKTOP_DIR_OVERRIDE}/{DESKTOP_NAME_OVERRIDE}")
+
     # Đọc nội dung gốc của Firefox desktop entry
-    original_content = read_content_in_firefox_desktop()
+    original_content = read_content_in_firefox_desktop(path=desktop_override_path)
     if not original_content:
-        print(f"Error: Original Firefox desktop entry not found at {DESKTOP_DIR_OVERRIDE}/{DESKTOP_NAME_OVERRIDE}")
+        print(f"Error: Original Firefox desktop entry not found at {desktop_override_path}")
         return None
 
     #tạo file backup nếu chưa có
-    if not Path(f"{DESKTOP_DIR_OVERRIDE}/{DESKTOP_NAME_OVERRIDE}.bak").exists():
-        backup_file(Path(f"{DESKTOP_DIR_OVERRIDE}/{DESKTOP_NAME_OVERRIDE}"))
+    if not Path(f"{desktop_override_path}.bak").exists():
+        backup_file(desktop_override_path)
 
     # Tạo nội dung mới với Exec trỏ đến script wrapper
     new_content = ""
     for line in original_content.splitlines():
         if line.startswith("Exec="):
-            new_content += f"Exec=bash -c 'cd \"$HOME\" && {wrapper_path} %u'\n"
+            # new_content += f"Exec=bash -c 'cd \"$HOME\" && {wrapper_path} %u'\n"
+            new_content += f"Exec=/bin/sh-c 'cd \"$HOME\" && {wrapper_path} %u'\n"
         else:
             new_content += line + "\n"
     new_content = new_content.strip() + "\n"
-    desktop_override_path = Path(f"{DESKTOP_DIR_OVERRIDE}/{DESKTOP_NAME_OVERRIDE}")
-    write_executable(desktop_override_path, new_content, mode=0o755)
 
-    return desktop_override_path
+    res = write_executable(desktop_override_path, new_content, mode=0o755)
+
+    return desktop_override_path if res else None
 
 
 def install_desktop_entry(wrapper_path: Path) -> bool:
@@ -91,12 +98,6 @@ def install_desktop_entry(wrapper_path: Path) -> bool:
     if not check_root():
         print("Error: Must run as root to install desktop entry.")
         return False
-
-    # backup existing desktop override if any
-    desktop_override_path = Path(f"{DESKTOP_DIR_OVERRIDE}/{DESKTOP_NAME_OVERRIDE}")
-    # kiểm tra nếu đã có bản sao lưu rồi thì không cần tạo nữa
-    if desktop_override_path.exists() and not desktop_override_path.with_suffix('.bak').exists():
-        backup_file(desktop_override_path)
 
     desktop_override_path = create_desktop_override(wrapper_path)
     if desktop_override_path is None:
