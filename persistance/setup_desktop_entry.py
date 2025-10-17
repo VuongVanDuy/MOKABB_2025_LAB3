@@ -5,7 +5,7 @@ from typing import Optional
 from config import (SAVE_VIRUS_DIR, BACKUP_DIR, WRAPPER_DIR, WRAPPER_SCRIPT_NAME,
                     DESKTOP_NAME_OVERRIDE, DESKTOP_DIR_OVERRIDE, FIREFOX_BIN, LIST_NEW_FILES)
 
-from utils import check_root, remove_root_ownership
+from utils import check_root
 
 
 def write_executable(path: Path, content: str, mode: int = 0o755):

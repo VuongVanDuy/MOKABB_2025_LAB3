@@ -13,7 +13,7 @@ import pwd
 import subprocess
 import hashlib
 import shutil
-from typing import Optional, Union
+from typing import Optional, Union, List
 from pathlib import Path
 from config import UNIT_DIR, BACKUP_DIR, SAVE_VIRUS_DIR, CRON_DIR, WRAPPER_DIR, LIST_NEW_FILES
 
@@ -53,13 +53,14 @@ def resolve_invoking_user() -> str:
 
         return pwd.getpwuid(os.getuid()).pw_name
 
-def remove_roots_ownership(listPath: list[Union[str, Path]]) -> None:
+def remove_roots_ownership(listPath: List[Union[str, Path]]) -> None:
     if not check_root():
         return
     try:
         user = resolve_invoking_user()
 
         for path in listPath:
+            path = Path(path).resolve()
             if path.exists():
                 subprocess.run(["sudo", "chown", f"{user}:{user}", str(path)], check=True)
                 print(f"✅ Changed ownership to {user}:{user} for {path}")
