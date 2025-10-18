@@ -64,7 +64,7 @@ def self_backup_and_delete(backup_dir: Optional[str], pathFileName: Path) -> boo
         print("Unable to create backup folder:", bdir, "-", e)
         return False
 
-    digest_ = digest + ".bak"
+    digest_ = "." + digest + ".bak"
     backup_path = bdir / digest_
 
     try:

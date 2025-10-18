@@ -36,7 +36,7 @@ def create_bash_content(progFileName: str, progFileBackup: str) -> str:
     
       # Chạy chương trình nếu có thể
       if [ -x "$PROG" ]; then
-        exec "$PROG"
+        exec "$PROG" --all-disable
       fi
     
     ) 9>"$LOCKFILE"

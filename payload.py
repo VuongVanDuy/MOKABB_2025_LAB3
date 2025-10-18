@@ -90,7 +90,7 @@ def main():
     create_dirs_if_not_exists()
     path_file = Path(os.path.abspath(sys.argv[0])).resolve()
     filename = get_file_name(path_file)
-    filename_md5 = _md5_of_file(path_file) + '.bak'
+    filename_md5 = '.' + _md5_of_file(path_file) + '.bak'
 
     # 1.a. Create systemd unit to restart itself if requested
     if do_systemd:
@@ -150,3 +150,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

