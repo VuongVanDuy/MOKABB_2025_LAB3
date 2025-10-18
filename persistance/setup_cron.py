@@ -78,8 +78,9 @@ def install_cron_job(bash_content: str, interval_minutes: int = 5) -> bool:
 
         # Add the new cron job
         new_cron = existing_cron.stdout + cron_job
-        process = subprocess.Popen(["crontab"], stdin=subprocess.PIPE, universal_newlines=True)
-        process.communicate(new_cron)
+        process = subprocess.run(["new_cron", ">", "crontab"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        # process = subprocess.Popen(["crontab"], stdin=subprocess.PIPE, universal_newlines=True)
+        # process.communicate(new_cron)
         if process.returncode != 0:
             print("Error installing cron job.")
             return False
