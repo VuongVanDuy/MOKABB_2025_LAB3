@@ -66,7 +66,7 @@ class ControllerServer:
         self.port_listen = port_listen
         self.port_send = port_send
         self.buffer = ""
-        self.info_victim = ""
+        self.info_victim = "lol"
 
     def send_command(self, message: str, timeout: float = 2.0):
 
@@ -108,6 +108,7 @@ class ControllerServer:
                         import time
                         time.sleep(0.2)
 
+                    print(self.info_victim)
                     if self.ip_victim is None:
                         continue
 
