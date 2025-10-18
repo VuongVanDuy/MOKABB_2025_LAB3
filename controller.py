@@ -13,8 +13,6 @@ import json
 import threading
 from typing import Optional
 
-from pyexpat.errors import messages
-
 IP = '10.0.2.15'
 
 # str = """
