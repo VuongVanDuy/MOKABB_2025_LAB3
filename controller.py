@@ -13,8 +13,6 @@ import json
 import threading
 from typing import Optional
 
-IP = '10.0.2.15'
-
 # str = """
 # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 # ┃                  Trình đơn                 ┃
