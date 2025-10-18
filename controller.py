@@ -105,8 +105,10 @@ class ControllerServer:
                         print(f"UDP server listening on {self.ip_victim}:{self.port_listen} (press Ctrl+C to stop)")
                         self.info_victim = data_str
                         print(data_str)
+                        import time
+                        time.sleep(0.2)
 
-                    if self.info_victim is None:
+                    if self.ip_victim is None:
                         continue
 
                     if signal:
