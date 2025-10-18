@@ -105,6 +105,9 @@ class ControllerServer:
                         self.info_victim = data_str
                         print(data_str)
 
+                    if self.info_victim is None:
+                        continue
+
                     if signal:
                         self.buffer += data_str
                         os.system('clear')

