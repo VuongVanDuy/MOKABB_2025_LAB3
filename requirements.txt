@@ -2,3 +2,4 @@ pynput
 netifaces
 requests
 psutil
+pyinstaller
