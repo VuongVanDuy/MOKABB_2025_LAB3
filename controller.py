@@ -87,7 +87,7 @@ class ControllerServer:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(('0.0.0.0', self.port_listen))
-        sock.settimeout(0.5)
+        sock.settimeout(1)
         #print(f"UDP server listening on {self.ip_victim}:{self.port_listen} (press Ctrl+C to stop)")
 
         try:
