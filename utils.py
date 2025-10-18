@@ -202,6 +202,7 @@ def get_system_info(target_ip: str = None):
     system_info.append("\n💻 HARDWARE INFORMATION:")
     system_info.append(f"• CPU Count: {psutil.cpu_count()}")
     system_info.append(f"• RAM Memory: {round(psutil.virtual_memory().total / (1024 ** 3), 2)} GB")
+    system_info.append("=" * 50)
 
     # Join all lines into a single string
     return "\n".join(system_info)
