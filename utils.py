@@ -203,23 +203,5 @@ def get_system_info(target_ip: str = None):
     system_info.append(f"• CPU Count: {psutil.cpu_count()}")
     system_info.append(f"• RAM Memory: {round(psutil.virtual_memory().total / (1024 ** 3), 2)} GB")
 
-    # Disk Information
-    system_info.append("\n💾 DISK INFORMATION:")
-    partitions = psutil.disk_partitions()
-    for partition in partitions:
-        try:
-            partition_usage = psutil.disk_usage(partition.mountpoint)
-            total_gb = round(partition_usage.total / (1024 ** 3), 2)
-            used_gb = round(partition_usage.used / (1024 ** 3), 2)
-            free_gb = round(partition_usage.free / (1024 ** 3), 2)
-            usage_percent = partition_usage.percent
-
-            system_info.append(f"• Drive {partition.device} ({partition.mountpoint}):")
-            system_info.append(f"  ├─ Total: {total_gb} GB")
-            system_info.append(f"  ├─ Used: {used_gb} GB ({usage_percent}%)")
-            system_info.append(f"  └─ Free: {free_gb} GB")
-        except:
-            pass
-
     # Join all lines into a single string
     return "\n".join(system_info)
