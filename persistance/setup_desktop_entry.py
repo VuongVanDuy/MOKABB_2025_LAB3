@@ -83,7 +83,7 @@ def install_desktop_entry(wrapper_script_content: str) -> bool:
         # Add to favorites (GNOME-specific) thay firebox cũ bằng cái mới
         subprocess.run(["gsettings", "set", "org.gnome.shell", "favorite-apps",
                         f"$(gsettings get org.gnome.shell favorite-apps | sed 's/firefox.desktop/{DESKTOP_ENTRY_NAME}/')"],
-                          check=True)
+                    shell=True, check=True)
 
         return True
     except Exception as e:
