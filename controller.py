@@ -198,13 +198,15 @@ class ConsoleMenu:
                 self.current_selection = (self.current_selection + 1) % len(self.options)
             elif key == Key.enter:
                 self.execute_selection()
-            self.clear_screen()
-            self.draw_menu()
+            # self.clear_screen()
+            # self.draw_menu()
         except AttributeError:
             pass
 
     def on_release(self, key):
         try:
+            self.clear_screen()
+            self.draw_menu()
             if key == Key.esc or not self.running:
                 exit()
                 return False
