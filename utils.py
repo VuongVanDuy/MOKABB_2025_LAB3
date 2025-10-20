@@ -144,6 +144,19 @@ def is_in_same_subnet(ip1, ip2, netmask):
     except:
         return False
 
+def get_info_self_payload():
+    pid = os.getpid()
+
+    # Tạo đối tượng Process
+    process = psutil.Process(pid)
+
+    # Lấy tên tiến trình
+    process_name = process.name()
+
+    return {
+        "pid": pid,
+        "process_name": process_name
+    }
 
 def get_system_info(target_ip: str = None):
     """
@@ -176,7 +189,7 @@ def get_system_info(target_ip: str = None):
     # Get Public IP
     system_info.append("\n🌐 PUBLIC IP:")
     try:
-        response = requests.get('https://api.ipify.org', timeout=5)
+        response = requests.get('https://api.ipify.org', timeout=2)
         public_ip = response.text
         system_info.append(f"• Public IP: {public_ip}")
     except:

