@@ -11,10 +11,7 @@ The controller runs a listener in a separate thread and allows user input to con
 import socket, os
 import json
 import threading
-from turtledemo.penrose import inflatedart
 from typing import Optional
-import time
-# import keyboard
 from pynput.keyboard import Listener, Key
 
 line = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -206,7 +203,7 @@ class ControllerServer:
         finally:
             sock.close()
             if start_monitor_thread.is_alive():
-                start_monitor_thread.join(timeout=3)
+                start_monitor_thread.join(timeout=2)
             print("Socket closed. Bye.")
 
 
