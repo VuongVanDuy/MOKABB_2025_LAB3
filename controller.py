@@ -201,13 +201,9 @@ class ControllerServer:
                         self.buffer += data_str
                         self.show_console()
                     else:
-                        self.buffer = ""
+                        self.buffer = data_str
+                        self.show_console()
                 except socket.timeout as e:
-                    self.info_payload = {}
-                    self.ip_victim = None
-                    self.buffer = ""
-                    self.info_victim = None
-                    self.show_console()
                     continue
                 except json.JSONDecodeError as e:
                     pass

